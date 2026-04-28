@@ -94,22 +94,35 @@ GAgentManager - 企业级Agent管理平台
 **具体需求：**
 
 ##### 4.1.1.1 基础配置
-- Agent的创建：支持多种类型Agent的创建（聊天型、工作流型、分析型等）
-- Agent发布：支持一键发布功能
-- Agent启动/停止：远程控制Agent的运行状态
-- Agent删除：安全删除不需要的Agent
+
+**Agent操作功能：**
+
+- **Agent新增**：支持多种类型Agent的创建（聊天型、工作流型、分析型等），创建后状态为"未发布"
+- **Agent上线**：将已发布的Agent设置为运行状态，开始对外提供服务
+- **Agent下线**：将运行中的Agent停止服务，状态变更为"已下线"
+- **Agent删除**：安全删除不再需要的Agent，需确认Agent已下线且无依赖关系
+- **Agent修改**：编辑Agent的基础配置、Skill配置、MCP配置、工作流配置等，修改后Agent处于草稿状态，需重新发布
+
+**Agent发布功能：**
+
+- Agent修改完毕后，支持发布功能，将当前配置生成为一个新版本
+- 每次发布都会自动生成新的版本号（修订号+1）
+- 发布前自动校验配置的完整性（模型、Skill、MCP、工作流配置是否完整）
+- 发布后可选择是否立即上线运行
+
+**Agent版本控制：**
+- 采用语义化版本号（V主版本.次版本.修订号，如V1.0.0）
+- 新增时自动生成初始版本V1.0.0（草稿状态）
+- 每次发布Agent时，版本号自动递增（修订号+1）
+- 重大变更可手动递增主版本或次版本
+- 支持版本历史记录查看，记录每个版本的变更内容
+- 支持版本回滚：可回滚到任意历史版本
+- 支持版本对比：对比两个版本之间的配置差异
+- 版本分支管理：支持基于版本创建分支进行灰度测试
+- 版本状态：草稿、已发布、运行中、已下线、已回滚、已废弃
+
 - Agent基本信息管理：名称、描述、图标
 - Agent参数配置：温度、最大Token数、系统提示词等核心参数
-- Agent版本控制：
-  - 采用语义化版本号（V主版本.次版本.修订号，如V1.0.0）
-  - 创建时自动生成初始版本V1.0.0
-  - 每次发布Agent时，版本号自动递增（修订号+1）
-  - 重大变更可手动递增主版本或次版本
-  - 支持版本历史记录查看，记录每个版本的变更内容
-  - 支持版本回滚：可回滚到任意历史版本
-  - 支持版本对比：对比两个版本之间的配置差异
-  - 版本分支管理：支持基于版本创建分支进行灰度测试
-  - 版本状态：草稿、已发布、已回滚、已废弃
 - Agent模板管理：支持Agent模板的创建和复用
 - Agent导入导出：支持Agent配置的导入和导出
 
@@ -122,7 +135,7 @@ GAgentManager - 企业级Agent管理平台
 | agentType | Enum | 是 | Agent类型：聊天型、工作流型、分析型、自动化型、混合型 |
 | description | Text | 否 | Agent描述信息，最大500字符 |
 | icon | File | 否 | Agent图标，支持PNG/JPG/SVG，最大2MB |
-| status | Enum | 是 | 运行状态：未发布、已发布、运行中、已停止、异常、发布中 |
+| status | Enum | 是 | 运行状态：未发布、已发布、已上线、已下线、异常、发布中 |
 | boundModel | String | 是 | 绑定的模型名称（来自模型管理） |
 | skillCount | Number | 是 | 已绑定Skill数量 |
 | mcpCount | Number | 是 | 已绑定MCP服务数量 |
@@ -162,12 +175,12 @@ GAgentManager - 企业级Agent管理平台
 | versionId | String | 是 | 版本唯一标识，系统自动生成 |
 | agentId | String | 是 | 所属Agent ID |
 | version | String | 是 | 版本号，语义化版本格式（V主版本.次版本.修订号） |
-| versionTag | Enum | 是 | 版本标签：草稿、已发布、运行中、已回滚、已废弃 |
+| versionTag | Enum | 是 | 版本标签：草稿、已发布、已上线、已下线、已回滚、已废弃 |
 | changelog | Text | 否 | 版本变更说明，最大1000字符 |
 | configSnapshot | JSON | 是 | 版本配置快照（包含基础配置、Skill配置、MCP配置、工作流配置） |
 | diffFromPrevious | JSON | 否 | 与上一版本的差异对比JSON |
 | creator | String | 是 | 版本创建人 |
-| publishTime | DateTime | 否 | 发布时间，仅已发布/运行中状态有值 |
+| publishTime | DateTime | 否 | 发布时间，仅已发布/已上线状态有值 |
 | createTime | DateTime | 是 | 版本创建时间 |
 | isCurrentVersion | Boolean | 是 | 是否为当前活跃版本 |
 | isStable | Boolean | 是 | 是否为稳定版本 |
@@ -307,7 +320,7 @@ GAgentManager - 企业级Agent管理平台
 | agentId | String | 是 | Agent唯一标识 |
 | agentName | String | 是 | Agent名称 |
 | agentType | Enum | 是 | Agent类型 |
-| status | Enum | 是 | 运行状态：未发布、已发布、运行中、已停止、异常、发布中 |
+| status | Enum | 是 | 运行状态：未发布、已发布、已上线、已下线、异常、发布中 |
 | description | Text | 否 | 描述信息 |
 | icon | File | 否 | 图标 |
 | version | String | 是 | 当前版本 |
