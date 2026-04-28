@@ -13,7 +13,7 @@ GAgentManager - 企业级Agent管理平台
 - 支持多种类型的Agent接入和管理
 - 提供灵活的Agent生命周期管理功能
 - 提供安全可靠的Agent运行环境
-- 支持Agent性能监控和分析
+- 支持Agent性能和状态分析
 - 集成丰富的Skill生态系统
 - 提供可视化的MCP管理能力
 - 提供全面的模型管理功能
@@ -47,7 +47,7 @@ GAgentManager - 企业级Agent管理平台
 - **开发团队：** 需要发布和调试Agent的开发人员
   - 年龄：25-35岁
   - 职位：软件工程师、AI工程师
-  - 需求：快速发布、调试和监控Agent
+  - 需求：快速发布、调试和管理Agent
   - 痛点：发布流程复杂，调试困难
 
 - **数据科学家：** 需要管理AI模型的研究人员
@@ -66,7 +66,7 @@ GAgentManager - 企业级Agent管理平台
   - 年龄：30-42岁
   - 职位：系统管理员、DevOps工程师
   - 需求：确保系统稳定运行和安全性
-  - 痛点：监控工具分散，难以统一管理
+  - 痛点：需要一套统一的平台来管理Agent和服务
 
 - **人力资源管理员：** 负责用户账户和权限管理的人员
   - 年龄：28-45岁
@@ -122,6 +122,7 @@ GAgentManager - 企业级Agent管理平台
 - 版本状态：草稿、已发布、运行中、已下线、已回滚、已废弃
 
 - Agent基本信息管理：名称、描述、图标
+- Agent管理员管理：创建时自动设为创建人，支持增加和移除其他用户作为Agent管理员
 - Agent参数配置：温度、最大Token数、系统提示词等核心参数
 
 **Agent 列表字段设计：**
@@ -133,6 +134,7 @@ GAgentManager - 企业级Agent管理平台
 | agentType | Enum | 是 | Agent类型：聊天型、工作流型、分析型、自动化型、混合型 |
 | description | Text | 否 | Agent描述信息，最大500字符 |
 | icon | File | 否 | Agent图标，支持PNG/JPG/SVG，最大2MB |
+| admins | Array | 是 | Agent管理员用户列表，默认包含创建人 |
 | status | Enum | 是 | 运行状态：未发布、已发布、已上线、已下线、异常、发布中 |
 | boundModel | String | 是 | 绑定的模型名称（来自模型管理） |
 | skillCount | Number | 是 | 已绑定Skill数量 |
@@ -153,6 +155,7 @@ GAgentManager - 企业级Agent管理平台
 | agentType | Enum | 是 | Agent类型：聊天型、工作流型、分析型、自动化型、混合型 |
 | description | Text | 否 | 描述信息，最大500字符 |
 | icon | File | 否 | 图标上传，支持PNG/JPG/SVG，最大2MB |
+| admins | Array | 是 | Agent管理员用户列表，创建时默认包含当前用户 |
 | systemPrompt | Text | 否 | 系统提示词，最大5000字符，支持Markdown格式 |
 | temperature | Number | 否 | 温度参数，范围0.0-2.0，默认1.0，步长0.1 |
 | maxTokens | Number | 否 | 最大Token数，范围1-128000，默认4096 |
@@ -215,7 +218,6 @@ GAgentManager - 企业级Agent管理平台
 - MCP可见性控制：配置哪些MCP服务对该Agent可见
 - MCP关联配置：支持特定MCP服务与Agent的关联设置
 - MCP连接参数：为每个绑定的MCP配置独立连接参数
-- MCP状态监控：查看Agent关联MCP服务的运行状态
 
 **Agent MCP 配置字段设计：**
 
@@ -275,11 +277,6 @@ GAgentManager - 企业级Agent管理平台
 | execCount | Number | 是 | 累计执行次数 |
 | successRate | Number | 是 | 执行成功率，百分比 |
 
-##### 4.1.1.5 监控与分析
-- Agent状态监控：实时监控Agent运行状态
-- Agent性能分析：提供性能指标分析报告
-- 模型绑定：Agent只能使用模型管理中已注册的模型
-
 **Agent 详情页字段设计：**
 
 | 字段名 | 字段类型 | 是否必填 | 说明/约束 |
@@ -304,25 +301,6 @@ GAgentManager - 企业级Agent管理平台
 | createTime | DateTime | 是 | 创建时间 |
 | updater | String | 是 | 更新人，系统自动记录最后修改人 |
 | updateTime | DateTime | 是 | 更新时间 |
-
-**Agent 性能监控字段设计：**
-
-| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
-|--------|----------|----------|-----------|
-| agentId | String | 是 | Agent ID |
-| timestamp | DateTime | 是 | 数据采集时间 |
-| requestCount | Number | 是 | 请求次数（统计周期内） |
-| avgResponseTime | Number | 是 | 平均响应时间（毫秒） |
-| p95ResponseTime | Number | 是 | P95响应时间（毫秒） |
-| p99ResponseTime | Number | 是 | P99响应时间（毫秒） |
-| successRate | Number | 是 | 成功率（百分比） |
-| errorCount | Number | 是 | 错误次数 |
-| tokenUsage | Number | 是 | Token消耗总量 |
-| cost | Number | 是 | 调用成本（元） |
-| cpuUsage | Number | 是 | CPU使用率（百分比） |
-| memoryUsage | Number | 是 | 内存使用率（百分比） |
-| activeConnections | Number | 是 | 活跃连接数 |
-| queueLength | Number | 是 | 队列长度 |
 
 **验收标准：**
 - 用户能够在5分钟内创建并发布一个新的Agent
@@ -499,108 +477,16 @@ GAgentManager - 企业级Agent管理平台
 - 批量操作支持至少1000个用户
 - 密码重置后临时密码在指定时间内有效
 
-#### 4.1.3 监控与告警
-**功能描述：** 实时监控系统和Agent运行状态，提供告警功能
-**用户故事：** 作为系统管理员，我希望能够及时了解系统和Agent的运行状况，并在出现问题时收到告警。
-
-**监控指标字段设计：**
-
-| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
-|--------|----------|----------|-----------|
-| metricId | String | 是 | 指标唯一标识，系统自动生成 |
-| metricName | String | 是 | 指标名称（如CPU使用率、响应时间、请求量等） |
-| metricType | Enum | 是 | 指标类型：系统级、Agent级、模型级、MCP级 |
-| targetId | String | 是 | 监控目标ID（Agent ID、模型ID等） |
-| currentValue | Number | 是 | 当前值 |
-| unit | String | 是 | 单位（%、ms、次/秒、个等） |
-| trend | Enum | 是 | 趋势：上升、下降、平稳 |
-| threshold | JSON | 是 | 阈值配置：警告阈值、严重阈值 |
-| collectionInterval | Number | 是 | 采集间隔（秒），最小30秒 |
-| retentionDays | Number | 是 | 数据保留天数，默认30天 |
-| lastCollectTime | DateTime | 是 | 最近采集时间 |
-| historyData | Array | 是 | 历史数据点列表（时间戳+值） |
-
-**告警规则字段设计：**
-
-| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
-|--------|----------|----------|-----------|
-| ruleId | String | 是 | 规则唯一标识，系统自动生成 |
-| ruleName | String | 是 | 规则名称，2-100字符 |
-| description | Text | 否 | 规则描述，最大500字符 |
-| isEnabled | Boolean | 是 | 是否启用，默认true |
-| metricId | String | 是 | 关联的监控指标ID |
-| condition | Enum | 是 | 条件：大于、小于、等于、大于等于、小于等于 |
-| threshold | Number | 是 | 阈值 |
-| duration | Number | 是 | 持续时间（秒），持续超过阈值才触发告警 |
-| severity | Enum | 是 | 严重级别：信息、警告、严重、致命 |
-| notifyChannels | Array | 是 | 通知渠道：邮件、短信、系统通知、Webhook |
-| notifyUsers | Array | 是 | 接收告警的用户/用户组ID列表 |
-| cooldownMinutes | Number | 否 | 冷却时间（分钟），同一告警重复通知间隔，默认30分钟 |
-| createTime | DateTime | 是 | 创建时间 |
-| updater | String | 是 | 更新人，系统自动记录最后修改人 |
-| updateTime | DateTime | 是 | 更新时间 |
-| creator | String | 是 | 创建人 |
-
-**告警历史字段设计：**
-
-| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
-|--------|----------|----------|-----------|
-| alertId | String | 是 | 告警唯一标识，系统自动生成 |
-| ruleId | String | 是 | 触发规则ID |
-| ruleName | String | 是 | 触发规则名称 |
-| severity | Enum | 是 | 严重级别：信息、警告、严重、致命 |
-| targetId | String | 是 | 告警目标对象ID |
-| targetName | String | 是 | 告警目标对象名称 |
-| metricValue | Number | 是 | 触发时的指标值 |
-| threshold | Number | 是 | 触发阈值 |
-| message | Text | 是 | 告警详情描述 |
-| status | Enum | 是 | 处理状态：未处理、处理中、已解决、已忽略 |
-| assignee | String | 否 | 处理人 |
-| resolveTime | DateTime | 否 | 解决时间 |
-| resolveNote | Text | 否 | 处理说明 |
-| notifyStatus | Enum | 是 | 通知状态：已发送、发送失败 |
-| triggerTime | DateTime | 是 | 触发时间 |
-| endTime | DateTime | 否 | 告警结束时间（指标恢复正常的时间） |
-
-**告警通知方式配置字段设计：**
-
-| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
-|--------|----------|----------|-----------|
-| notifyId | String | 是 | 通知配置唯一标识 |
-| channelType | Enum | 是 | 渠道类型：邮件、短信、系统通知、Webhook、企业微信、钉钉 |
-| channelName | String | 是 | 渠道名称，2-50字符 |
-| isEnabled | Boolean | 是 | 是否启用 |
-| recipients | Array | 是 | 接收人列表（邮箱地址、手机号、用户ID等） |
-| webhookUrl | String | 否 | Webhook URL（Webhook渠道时必填） |
-| webhookSecret | String | 否 | Webhook签名密钥（加密存储） |
-| templateId | String | 是 | 消息模板ID |
-| severityFilter | Array | 否 | 接收的告警级别列表，空表示接收全部 |
-| createTime | DateTime | 是 | 创建时间 |
-| creator | String | 是 | 创建人 |
-
-**具体需求：**
-- Agent运行状态监控：CPU、内存、磁盘使用率等
-- 性能指标监控：响应时间、吞吐量、成功率、错误率
-- 自定义告警规则：基于阈值的自定义告警设置
-- 实时告警通知：邮件、短信、系统通知
-- 历史数据分析：长期趋势分析
-- 告警历史记录：告警事件的详细记录
-
-**验收标准：**
-- 监控数据采集频率不超过30秒
-- 告警响应时间小于5秒
-- 支持至少10种预设监控指标
-
-#### 4.1.4 首页与仪表盘
+#### 4.1.3 首页
 **功能描述：** 为用户提供个性化的信息展示和快速操作入口
 **用户故事：** 作为普通用户，我希望在登录后能看到最重要的信息和常用功能，提高工作效率。
 
-**首页仪表盘组件字段设计：**
+**首页组件字段设计：**
 
 | 字段名 | 字段类型 | 是否必填 | 说明/约束 |
 |--------|----------|----------|-----------|
 | componentId | String | 是 | 组件唯一标识，系统自动生成 |
-| componentName | String | 是 | 组件名称（如系统概览、快捷操作、告警汇总等） |
+| componentName | String | 是 | 组件名称（如系统概览、快捷操作、通知中心等） |
 | componentType | Enum | 是 | 组件类型：统计卡片、图表、列表、快捷入口、通知中心 |
 | position | Number | 是 | 显示位置序号，数值越小越靠前 |
 | size | Enum | 是 | 组件大小：小（1/4宽度）、中（1/2宽度）、大（全宽度） |
@@ -641,7 +527,7 @@ GAgentManager - 企业级Agent管理平台
 | noticeId | String | 是 | 通知唯一标识 |
 | title | String | 是 | 通知标题，最大100字符 |
 | content | Text | 是 | 通知内容，最大2000字符 |
-| type | Enum | 是 | 类型：系统通知、告警通知、任务提醒、版本更新 |
+| type | Enum | 是 | 类型：系统通知、任务提醒、版本更新 |
 | severity | Enum | 是 | 级别：信息、警告、严重 |
 | sender | String | 是 | 发送者（系统/用户） |
 | targetUsers | Array | 否 | 目标用户列表，空表示全员通知 |
@@ -655,7 +541,7 @@ GAgentManager - 企业级Agent管理平台
 - 个性化首页：基于用户角色和偏好的定制化展示
 - 关键指标概览：系统健康度、Agent数量、运行状态等
 - 快捷操作入口：常用功能的一键访问
-- 通知和提醒中心：系统通知、告警信息、任务提醒
+- 通知和提醒中心：系统通知、任务提醒
 - 搜索功能：全局搜索Agent、Skill、工作流、模型等
 - 数据可视化：图表和仪表盘展示关键数据
 
@@ -746,27 +632,67 @@ GAgentManager - 企业级Agent管理平台
 | boundAgents | Array | 否 | 已绑定此Skill的Agent列表 |
 
 **具体需求：**
+- Skill新增：创建新的Skill，编写定义文件、配置参数
+- Skill删除：删除不再使用的Skill，需确认无Agent绑定
+- Skill修改：编辑Skill的定义和配置，修改后需重新发布
+- Skill发布：将修改后的Skill发布，每次发布自动生成新版本
+- Skill版本管理：
+  - 采用语义化版本号（V主版本.次版本.修订号，如V1.0.0）
+  - 创建时自动生成初始版本V1.0.0（草稿状态）
+  - 每次发布时版本号自动递增（修订号+1）
+  - 支持版本历史记录和查看
+  - 支持版本回滚
 - Skill分类浏览：按功能、行业、热度等维度分类
 - Skill搜索功能：全文搜索、标签筛选
 - Skill详情页面：功能介绍、使用方法、评价等
-- Skill安装和更新：一键安装、自动更新
+- Skill安装和更新：支持按指定版本安装、自动更新到最新版
 - 个人Skill管理：已安装Skill的管理
 - Skill市场集成：与第三方Skill市场的对接
 - Skill评价系统：用户评分和评论
 - Skill推荐算法：基于使用习惯的智能推荐
 - Skill可见性：仅对具有相应权限的Agent可用
-- Skill关联：支持与特定Agent的关联配置
+- Skill关联：支持将指定版本的Skill与特定Agent绑定
 - Skill安全验证：上传前的安全验证和测试
 
 **验收标准：**
 - Skill安装成功率99%以上
-- 支持在线更新功能
+- 支持按指定版本安装和更新功能
 - 搜索结果响应时间小于1秒
-- Agent只能使用已授权的Skill
+- Agent只能使用已授权且已绑定特定版本的Skill
+- Agent使用最新版Skill时，需更新Agent的Skill配置以绑定到新版本
 
 #### 4.1.6 MCP管理
 **功能描述：** 管理Model Context Protocol（MCP）服务和连接，为Agent提供模型上下文协议支持
 **用户故事：** 作为开发者，我希望能够方便地配置和管理MCP服务，以便更好地为Agent提供不同AI模型的集成能力。
+
+**MCP操作功能：**
+
+- **MCP新增**：创建新的MCP服务配置
+- **MCP删除**：删除不再使用的MCP服务，需确认无Agent绑定
+- **MCP启用**：启用MCP服务，使其对Agent可用
+- **MCP禁用**：禁用MCP服务，已绑定的Agent将收到提示
+- **MCP修改**：编辑MCP服务配置，修改后需重新发布
+- **MCP版本控制**：
+  - 采用语义化版本号（V主版本.次版本.修订号，如V1.0.0）
+  - 创建时自动生成初始版本V1.0.0（草稿状态）
+  - 每次发布时版本号自动递增（修订号+1）
+  - 支持版本历史记录和查看
+  - 支持版本回滚
+
+**MCP版本管理字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| versionId | String | 是 | 版本唯一标识，系统自动生成 |
+| mcpId | String | 是 | 所属MCP服务ID |
+| version | String | 是 | 版本号，语义化版本格式（V主版本.次版本.修订号） |
+| versionTag | Enum | 是 | 版本标签：草稿、已发布、已禁用、已废弃 |
+| changelog | Text | 否 | 版本变更说明，最大1000字符 |
+| configSnapshot | JSON | 是 | 版本配置快照（包含服务器地址、协议版本、传输类型、认证信息等） |
+| creator | String | 是 | 版本创建人 |
+| publishTime | DateTime | 否 | 发布时间 |
+| createTime | DateTime | 是 | 版本创建时间 |
+| isCurrentVersion | Boolean | 是 | 是否为当前活跃版本 |
 
 **MCP 服务列表字段设计：**
 
@@ -775,12 +701,10 @@ GAgentManager - 企业级Agent管理平台
 | mcpId | String | 是 | MCP服务唯一标识，系统自动生成 |
 | mcpName | String | 是 | 服务名称，2-50字符 |
 | description | Text | 否 | 描述信息，最大500字符 |
-| serverUrl | String | 是 | MCP服务器地址，有效的URL格式 |
-| protocolVersion | Enum | 是 | 协议版本：v1.0、v1.1、v2.0 |
-| transportType | Enum | 是 | 传输类型：stdio、sse、http |
-| status | Enum | 是 | 状态：未连接、连接中、已连接、异常 |
-| healthStatus | Enum | 是 | 健康状态：健康、亚健康、不健康 |
-| responseTime | Number | 否 | 平均响应时间（毫秒） |
+| latestVersion | String | 是 | 最新版本号 |
+| currentVersion | String | 是 | 当前发布使用的版本号 |
+| isEnabled | Boolean | 是 | 是否启用，禁用后对Agent不可用 |
+| status | Enum | 是 | 连接状态：未连接、连接中、已连接、异常 |
 | boundAgentCount | Number | 是 | 已绑定Agent数量 |
 | creator | String | 是 | 创建人 |
 | createTime | DateTime | 是 | 创建时间 |
@@ -808,8 +732,6 @@ GAgentManager - 企业级Agent管理平台
 | envVariables | JSON | 否 | 环境变量配置，键值对格式 |
 | command | String | 否 | 启动命令（stdio传输方式时需要） |
 | args | Array | 否 | 启动参数列表 |
-| tags | Array | 否 | 标签列表 |
-| templateId | String | 否 | 基于模板创建时选择模板ID |
 
 **MCP 日志字段设计：**
 
@@ -856,8 +778,12 @@ GAgentManager - 企业级Agent管理平台
 | completeTime | DateTime | 否 | 完成时间 |
 
 **具体需求：**
-- MCP服务配置：MCP服务器地址、认证信息、连接参数
-- MCP状态监控：连接状态、服务健康度、响应时间
+- MCP新增：创建新的MCP服务配置，填写服务器地址、认证信息等
+- MCP删除：删除不再使用的MCP服务，需确认无Agent绑定
+- MCP启用：启用MCP服务，使其对Agent可用
+- MCP禁用：禁用MCP服务，已绑定的Agent将收到提示
+- MCP修改：编辑MCP服务配置，修改后需重新发布生成新版本
+- MCP版本控制：版本历史记录、版本查看、版本回滚
 - MCP权限管理：不同用户对MCP服务的访问权限
 - MCP日志查看：详细的连接和交互日志
 - MCP性能分析：使用统计、错误率、响应时间分析
@@ -871,7 +797,8 @@ GAgentManager - 企业级Agent管理平台
 - MCP连接建立时间小于3秒
 - 支持至少5种MCP协议版本
 - 自动故障恢复成功率95%以上
-- Agent只能使用已授权的MCP服务
+- Agent只能使用已启用的MCP服务
+- Agent使用MCP时，自动使用MCP的最新版本配置，无需与特定版本绑定
 
 #### 4.1.7 模型管理
 **功能描述：** 管理平台接入的大语言模型（LLM）资源，支持模型的注册、配置、启用/禁用等操作，为Agent提供可选用的模型列表
@@ -892,9 +819,6 @@ GAgentManager - 企业级Agent管理平台
 | totalCalls | Number | 是 | 累计调用次数 |
 | todayCalls | Number | 是 | 今日调用次数 |
 | todayTokenCount | Number | 是 | 今日Token消耗量 |
-| cost | Number | 是 | 今日调用成本（元） |
-| quotaUsed | Number | 否 | 已使用配额 |
-| quotaTotal | Number | 否 | 总配额限制 |
 | createTime | DateTime | 是 | 创建时间 |
 | updater | String | 是 | 更新人，系统自动记录最后修改人 |
 | updateTime | DateTime | 是 | 更新时间 |
@@ -921,12 +845,6 @@ GAgentManager - 企业级Agent管理平台
 | outputTypes | Array | 是 | 支持的输出类型：文本、JSON、图片 |
 | description | Text | 否 | 模型描述，最大500字符 |
 | category | String | 否 | 分类/分组名称 |
-| inputPrice | Number | 否 | 输入Token单价（元/百万Token），非负数 |
-| outputPrice | Number | 否 | 输出Token单价（元/百万Token），非负数 |
-| dailyTokenQuota | Number | 否 | 每日Token配额上限，0表示不限 |
-| dailyRequestQuota | Number | 否 | 每日请求配额上限，0表示不限 |
-| qpsLimit | Number | 否 | QPS限制（每秒请求数），0表示不限 |
-| tpmLimit | Number | 否 | TPM限制（每分钟Token数），0表示不限 |
 | isEnabled | Boolean | 是 | 是否启用，默认true |
 | sortOrder | Number | 否 | 列表排序序号，数值越小越靠前 |
 
@@ -944,13 +862,10 @@ GAgentManager - 企业级Agent管理平台
 | inputTypes | Array | 是 | 支持的输入类型 |
 | outputTypes | Array | 是 | 支持的输出类型 |
 | config | JSON | 是 | 完整配置信息（不含API Key明文） |
-| pricing | JSON | 是 | 价格配置（输入/输出单价） |
-| quota | JSON | 是 | 配额配置 |
-| rateLimit | JSON | 是 | 速率限制配置 |
 | boundAgents | Array | 是 | 已绑定Agent列表 |
 | healthCheckResult | Enum | 否 | 最近连通性测试结果：通过、失败、未测试 |
 | lastTestTime | DateTime | 否 | 最近测试时间 |
-| statistics | JSON | 是 | 统计数据（调用次数、Token消耗、成本等） |
+| statistics | JSON | 是 | 统计数据（调用次数、Token消耗等） |
 | createTime | DateTime | 是 | 创建时间 |
 | updater | String | 是 | 更新人，系统自动记录最后修改人 |
 | updateTime | DateTime | 是 | 更新时间 |
@@ -969,7 +884,6 @@ GAgentManager - 企业级Agent管理平台
 | inputTokens | Number | 是 | 输入Token总数 |
 | outputTokens | Number | 是 | 输出Token总数 |
 | totalTokens | Number | 是 | Token总数 |
-| totalCost | Number | 是 | 总成本（元） |
 | activeAgents | Number | 是 | 使用该模型的活跃Agent数 |
 
 **具体需求：**
@@ -982,11 +896,8 @@ GAgentManager - 企业级Agent管理平台
 - 修改配置：更新 API 连接信息、调整参数范围、修改能力标签
 - 模型测试：提供模型连通性测试功能，验证 API Key 和连接配置是否正确
 - 模型分组/分类：按提供商或用途对模型进行分类管理
-- 成本配置：记录模型的计费方式（按 Token 计费），配置输入/输出 Token 的单价，用于成本统计
 - 模型可见性：仅对具有相应权限的 Agent 可用
 - 模型关联：支持与特定 Agent 的关联配置
-- 配额管理：可设置模型的使用配额限制（如每日最大 Token 数、最大请求数）
-- 速率限制：可配置模型的调用频率限制（QPS/TPM 限制）
 
 **验收标准：**
 - 支持至少 10 种主流 LLM 模型的配置管理
@@ -1013,7 +924,6 @@ GAgentManager - 企业级Agent管理平台
    - Agent运行状态统计
    - 模型使用情况统计
    - 性能指标图表
-   - 告警信息汇总
 
 3. Agent管理界面
    - Agent列表和详细信息
@@ -1033,9 +943,7 @@ GAgentManager - 企业级Agent管理平台
    - 模型连接配置（API Key、Base URL、超时设置）
    - 参数配置（最大 Token、温度范围、Top-P 等）
    - 能力标签管理（对话、函数调用、多模态等）
-   - 成本配置（输入/输出 Token 单价）
    - 连通性测试按钮
-   - 配额和速率限制设置
    - 搜索和筛选功能（按提供商、状态、能力标签）
 
 5. Skill商店管理
@@ -1045,7 +953,6 @@ GAgentManager - 企业级Agent管理平台
 
 6. MCP管理界面
    - MCP服务列表
-   - 状态监控
    - 配置管理
 
 7. 配置管理界面
@@ -1100,47 +1007,6 @@ GAgentManager - 企业级Agent管理平台
     - 权限矩阵
     - 审批流程设置
     - 权限模板管理
-
-11. 监控图表和报表
-    - 实时监控面板
-    - 历史数据报表
-    - 自定义图表
-
-**监控图表配置字段设计：**
-
-| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
-|--------|----------|----------|-----------|
-| chartId | String | 是 | 图表唯一标识 |
-| chartName | String | 是 | 图表名称，2-50字符 |
-| chartType | Enum | 是 | 图表类型：折线图、柱状图、饼图、面积图、仪表盘、热力图 |
-| metrics | Array | 是 | 关联指标列表（指标ID+聚合方式） |
-| timeRange | Enum | 是 | 时间范围：最近1小时、6小时、24小时、7天、30天 |
-| refreshInterval | Number | 是 | 刷新间隔（秒），最小30秒 |
-| dimensions | Array | 否 | 维度字段列表（用于分组展示） |
-| threshold | JSON | 否 | 阈值线配置（警告线、严重线） |
-| sortOrder | Number | 是 | 显示排序 |
-
-**历史报表字段设计：**
-
-| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
-|--------|----------|----------|-----------|
-| reportId | String | 是 | 报表唯一标识 |
-| reportName | String | 是 | 报表名称 |
-| reportType | Enum | 是 | 报表类型：Agent性能、模型调用、Skill使用、系统资源 |
-| timeRange | JSON | 是 | 时间范围（开始时间、结束时间） |
-| metrics | Array | 是 | 包含的指标列表 |
-| format | Enum | 是 | 导出格式：PDF、Excel、CSV |
-| schedule | Enum | 否 | 生成周期：单次、每日、每周、每月 |
-| recipients | Array | 否 | 报表接收人列表 |
-| status | Enum | 是 | 状态：生成中、已完成、生成失败 |
-| fileUrl | String | 否 | 报表文件下载链接 |
-| createTime | DateTime | 是 | 创建时间 |
-| generateTime | DateTime | 否 | 生成完成时间 |
-
-12. 告警管理界面
-    - 告警规则设置
-    - 告警历史
-    - 通知方式配置
 
 **管理端通用组件字段设计：**
 
@@ -1238,7 +1104,6 @@ GAgentManager - 企业级Agent管理平台
 | smsNotify | Boolean | 是 | 短信通知开关，默认关闭 |
 | inAppNotify | Boolean | 是 | 站内通知开关，默认开启 |
 | agentStatusChange | Boolean | 是 | Agent状态变更通知，默认开启 |
-| alertNotify | Boolean | 是 | 告警通知，默认开启 |
 | systemUpdate | Boolean | 是 | 系统更新通知，默认开启 |
 | taskReminder | Boolean | 是 | 任务提醒，默认开启 |
 | quietHoursStart | String | 否 | 免打扰开始时间（HH:mm），如22:00 |
@@ -1335,7 +1200,6 @@ GAgentManager - 企业级Agent管理平台
 | messageCount | Number | 是 | 消息轮次数 |
 | modelUsed | String | 是 | 使用的模型 |
 | tokenUsage | Number | 是 | Token消耗总量 |
-| cost | Number | 是 | 调用成本（元） |
 | skillsUsed | Array | 否 | 使用的Skill列表 |
 | duration | Number | 是 | 会话时长（秒） |
 | status | Enum | 是 | 状态：进行中、已完成、异常终止 |
@@ -1355,7 +1219,6 @@ GAgentManager - 企业级Agent管理平台
 | outputTypes | Array | 是 | 支持的输出类型 |
 | description | Text | 否 | 模型描述 |
 | isAvailable | Boolean | 是 | 当前是否可用 |
-| costInfo | String | 否 | 成本信息展示（元/百万Token） |
 
 ## 5. 技术架构
 
@@ -1372,7 +1235,6 @@ GAgentManager - 企业级Agent管理平台
 - **AI框架：** Spring AI + Spring AI Alibaba（统一AI模型调用、多模型适配、Prompt管理、RAG支持）
 - **消息队列：** RocketMQ（异步处理、事件驱动、消息可靠投递）
 - **日志系统：** ELK Stack（Elasticsearch, Logstash, Kibana）
-- **监控系统：** Prometheus + Grafana + Jaeger（链路追踪）
 - **API网关：** Spring Cloud Gateway
 - **工作流引擎：** Temporal.io / LiteFlow
 - **技能管理系统：** 插件化设计 + SPI扩展机制
@@ -1393,7 +1255,7 @@ GAgentManager - 企业级Agent管理平台
 - **Skill表：** Skill元数据、版本信息
 - **工作流表：** 工作流定义、执行记录
 - **MCP配置表：** MCP服务配置信息
-- **模型表：** 模型基本信息（名称、提供商、API类型、API Key、Base URL、参数配置、能力标签、状态、成本配置、配额限制等）
+- **模型表：** 模型基本信息（名称、提供商、API类型、API Key、Base URL、参数配置、能力标签、状态、成本信息等）
 - **Agent资源关联表：** Agent与模型、Skill、MCP、工作流的关联关系
 - **日志表：** 用户操作日志、系统日志
 
@@ -1499,15 +1361,9 @@ GAgentManager - 企业级Agent管理平台
    - 关联模型、Skill、MCP和工作流
    - 保存配置
 
-9. **启动Agent并监控**
+9. **启动Agent**
     - 启动Agent
-    - 监控Agent运行状态
-    - 查看性能指标和模型使用情况
-
-10. **查看监控报告**
-    - 访问监控仪表盘
-    - 查看历史数据和趋势
-    - 导出报告
+    - 查看Agent运行状态
 
 ### 7.3 界面设计规范
 - 颜色主题：深蓝为主色调，灰色辅助，橙色强调
@@ -1537,7 +1393,6 @@ GAgentManager - 企业级Agent管理平台
 - Agent管理功能开发
 - 用户权限系统完善
 - 用户管理功能开发
-- 基础监控功能
 - 个性化首页开发
 - 模型基础功能开发
 - MCP基础功能
@@ -1548,7 +1403,6 @@ GAgentManager - 企业级Agent管理平台
 - Agent CRUD功能
 - 完整权限系统
 - 用户管理系统
-- 基础监控面板
 - 首页仪表盘
 - 模型管理基础功能（模型注册、配置、启用/禁用）
 - 资源关联功能
@@ -1557,11 +1411,10 @@ GAgentManager - 企业级Agent管理平台
 - Skill商店开发
 - MCP高级管理功能
 - 工作流引擎开发
-- 模型管理增强功能（连通性测试、成本统计、配额管理、速率限制）
+- 模型管理增强功能（连通性测试、使用统计）
 - 用户管理增强功能（批量操作、分组管理等）
 - Agent资源关联增强功能
 - Agent工作流集成增强功能
-- 高级监控和告警
 - 性能优化
 - 安全加固
 - 用户体验优化
@@ -1572,7 +1425,6 @@ GAgentManager - 企业级Agent管理平台
 - 模型管理系统
 - 用户管理系统
 - Agent资源关联系统
-- 完整监控告警系统
 
 #### Phase 4: 测试与发布 (Week 21-24)
 - 全面功能测试
