@@ -12,7 +12,12 @@
       "Bash(git commit *)",
       "Bash(git config *)",
       "Bash(git merge *)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(ln -sf ../../.agents/skills/create-java-project-structure create-java-project-structure)",
+      "Bash(ln -sf ../../.agents/skills/design-enterprise-ui-antd design-enterprise-ui-antd)",
+      "Bash(curl -L https://github.com/deanpeters/Product-Manager-Skills/archive/main.zip -o /tmp/Product-Manager-Skills-main.zip)",
+      "Bash(unzip /tmp/Product-Manager-Skills-main.zip -d /tmp/)",
+      "Bash(awk '{print $9}')"
     ]
   }
 }
