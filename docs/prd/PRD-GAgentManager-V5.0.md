@@ -408,6 +408,23 @@ GAgentManager - 企业级Agent管理平台
 | createTime | DateTime | 是 | 创建时间 |
 | creator | String | 是 | 创建人 |
 
+**用户批量导入/导出字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| batchId | String | 是 | 批次唯一标识 |
+| fileName | String | 是 | 导入/导出文件名 |
+| fileType | Enum | 是 | 文件格式：CSV、Excel |
+| totalRows | Number | 是 | 总数据行数 |
+| successRows | Number | 是 | 成功处理行数 |
+| failRows | Number | 是 | 失败行数 |
+| failDetails | Array | 否 | 失败行详情（行号+错误原因） |
+| operator | String | 是 | 操作人 |
+| operationType | Enum | 是 | 操作类型：导入、导出 |
+| status | Enum | 是 | 状态：处理中、成功、部分成功、失败 |
+| createTime | DateTime | 是 | 操作时间 |
+| completeTime | DateTime | 否 | 完成时间 |
+
 **用户操作日志字段设计：**
 
 | 字段名 | 字段类型 | 是否必填 | 说明/约束 |
@@ -877,23 +894,6 @@ GAgentManager - 企业级Agent管理平台
 | isOfficial | Boolean | 是 | 是否官方模板 |
 | useCount | Number | 是 | 使用次数 |
 | createTime | DateTime | 是 | 创建时间 |
-
-**用户批量导入/导出字段设计：**
-
-| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
-|--------|----------|----------|-----------|
-| batchId | String | 是 | 批次唯一标识 |
-| fileName | String | 是 | 导入/导出文件名 |
-| fileType | Enum | 是 | 文件格式：CSV、Excel |
-| totalRows | Number | 是 | 总数据行数 |
-| successRows | Number | 是 | 成功处理行数 |
-| failRows | Number | 是 | 失败行数 |
-| failDetails | Array | 否 | 失败行详情（行号+错误原因） |
-| operator | String | 是 | 操作人 |
-| operationType | Enum | 是 | 操作类型：导入、导出 |
-| status | Enum | 是 | 状态：处理中、成功、部分成功、失败 |
-| createTime | DateTime | 是 | 操作时间 |
-| completeTime | DateTime | 否 | 完成时间 |
 
 **具体需求：**
 - MCP新增：创建新的MCP服务配置，填写服务器地址、认证信息等
@@ -1376,7 +1376,7 @@ GAgentManager - 企业级Agent管理平台
 - **Skill表：** Skill元数据、版本信息
 - **工作流表：** 工作流定义、执行记录
 - **MCP配置表：** MCP服务配置信息
-- **模型表：** 模型基本信息（名称、提供商、API类型、API Key、Base URL、参数配置、能力标签、状态、成本信息等）
+- **模型表：** 模型基本信息（名称、提供商、API类型、API Key、Base URL、参数配置、能力标签、状态、统计信息等）
 - **Agent资源关联表：** Agent与模型、Skill、MCP、工作流的关联关系
 - **日志表：** 用户操作日志、系统日志
 
@@ -1458,12 +1458,12 @@ GAgentManager - 企业级Agent管理平台
    - 系统发送验证码到邮箱
    - 输入验证码和新密码完成重置
 
-2. **访问个性化首页**
+5. **访问个性化首页（管理员）**
    - 登录后跳转到个性化首页
    - 查看系统概览和重要通知
    - 访问快捷操作入口
 
-3. **管理员用户管理**
+6. **管理员用户管理**
    - 进入用户管理页面
    - 查看用户列表和详细信息
    - 进行用户状态管理（启用/禁用/离职/删除）
@@ -1471,7 +1471,7 @@ GAgentManager - 企业级Agent管理平台
    - 创建或管理用户分组
    - 通过权限管理模块为用户分配角色
 
-3.5 **权限管理（RBAC）**
+7. **权限管理（RBAC）**
    - 进入权限管理页面
    - 查看角色列表和权限矩阵
    - 创建/编辑/删除自定义角色
@@ -1480,25 +1480,25 @@ GAgentManager - 企业级Agent管理平台
    - 批量将多个用户关联到同一角色
    - 复制或禁用角色
 
-4. **上传或配置模型**
+8. **上传或配置模型**
    - 进入模型管理页面
    - 上传新模型或选择现有模型
    - 配置模型参数和资源分配
    - 部署模型
 
-5. **从Skill商店安装所需Skill**
+9. **从Skill商店安装所需Skill**
    - 浏览Skill商店
    - 搜索或筛选需要的Skill
    - 查看Skill详情和评价
    - 安装Skill
 
-6. **配置MCP连接**
+10. **配置MCP连接**
    - 进入MCP管理页面
    - 添加新的MCP服务配置
    - 测试连接
    - 配置连接参数
 
-7. **创建Agent**
+11. **创建Agent**
    - 从首页进入Agent管理页面
    - 选择创建新Agent
    - 配置Agent基本信息和参数（基础配置）
@@ -1508,13 +1508,13 @@ GAgentManager - 企业级Agent管理平台
    - 选择可用的工作流作为Agent工具（工作流管理）
    - 发布Agent
 
-8. **配置Agent参数**
+12. **配置Agent参数**
    - 选择需要配置的Agent
    - 修改配置参数
    - 关联模型、Skill、MCP和工作流
    - 保存配置
 
-9. **启动Agent**
+13. **启动Agent**
     - 启动Agent
     - 查看Agent运行状态
 
@@ -1737,8 +1737,8 @@ GAgentManager - 企业级Agent管理平台
 
 ---
 
-**文档版本：** 5.4  
+**文档版本：** 5.5  
 **最后更新：** 2026年04月28日  
 **作者：** GAgentManager 产品团队  
-**更新说明：** Agent部署统一改为发布；增强Agent版本控制概念（语义化版本号、版本状态、版本对比、灰度测试、配置快照、回滚追踪）  
+**更新说明：** 新增RBAC权限管理模块（角色/权限/用户关联）；完善用户端功能（登录/找回密码/个人中心/Agent对话/会话管理/消息渲染含思维链、Markdown、附件/网页卡片）；更新4.2.1管理端界面对齐最新模块；删除模型管理中的价格/配额/速率限制；统一术语和模块引用  
 **审核人：** 产品负责人、技术负责人、业务负责人
