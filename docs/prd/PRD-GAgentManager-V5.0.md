@@ -98,7 +98,7 @@ GAgentManager - 企业级Agent管理平台
 - Agent发布：支持一键发布功能
 - Agent启动/停止：远程控制Agent的运行状态
 - Agent删除：安全删除不需要的Agent
-- Agent基本信息管理：名称、描述、图标、标签
+- Agent基本信息管理：名称、描述、图标
 - Agent参数配置：温度、最大Token数、系统提示词等核心参数
 - Agent版本控制：
   - 采用语义化版本号（V主版本.次版本.修订号，如V1.0.0）
@@ -122,7 +122,6 @@ GAgentManager - 企业级Agent管理平台
 | agentType | Enum | 是 | Agent类型：聊天型、工作流型、分析型、自动化型、混合型 |
 | description | Text | 否 | Agent描述信息，最大500字符 |
 | icon | File | 否 | Agent图标，支持PNG/JPG/SVG，最大2MB |
-| tags | Array | 否 | 标签列表，最多10个标签 |
 | status | Enum | 是 | 运行状态：未发布、已发布、运行中、已停止、异常、发布中 |
 | boundModel | String | 是 | 绑定的模型名称（来自模型管理） |
 | skillCount | Number | 是 | 已绑定Skill数量 |
@@ -142,7 +141,6 @@ GAgentManager - 企业级Agent管理平台
 | agentType | Enum | 是 | Agent类型：聊天型、工作流型、分析型、自动化型、混合型 |
 | description | Text | 否 | 描述信息，最大500字符 |
 | icon | File | 否 | 图标上传，支持PNG/JPG/SVG，最大2MB |
-| tags | Array | 否 | 标签，最多10个，支持自定义和从标签库选择 |
 | systemPrompt | Text | 否 | 系统提示词，最大5000字符，支持Markdown格式 |
 | temperature | Number | 否 | 温度参数，范围0.0-2.0，默认1.0，步长0.1 |
 | maxTokens | Number | 否 | 最大Token数，范围1-128000，默认4096 |
@@ -312,7 +310,6 @@ GAgentManager - 企业级Agent管理平台
 | status | Enum | 是 | 运行状态：未发布、已发布、运行中、已停止、异常、发布中 |
 | description | Text | 否 | 描述信息 |
 | icon | File | 否 | 图标 |
-| tags | Array | 否 | 标签列表 |
 | version | String | 是 | 当前版本 |
 | boundModel | String | 是 | 绑定模型 |
 | systemPrompt | Text | 否 | 系统提示词 |
