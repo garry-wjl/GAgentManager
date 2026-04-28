@@ -123,7 +123,6 @@ GAgentManager - 企业级Agent管理平台
 
 - Agent基本信息管理：名称、描述、图标
 - Agent参数配置：温度、最大Token数、系统提示词等核心参数
-- Agent模板管理：支持Agent模板的创建和复用
 - Agent导入导出：支持Agent配置的导入和导出
 
 **Agent 列表字段设计：**
@@ -166,7 +165,6 @@ GAgentManager - 企业级Agent管理平台
 | responseFormat | Enum | 否 | 响应格式：text、json_object、structured_output |
 | timeoutSeconds | Number | 否 | 请求超时时间（秒），范围5-300，默认60 |
 | retryCount | Number | 否 | 失败重试次数，范围0-5，默认3 |
-| templateId | String | 否 | 基于模板创建时选择模板ID |
 | version | String | 是 | 版本号，创建时自动生成1.0.0，编辑时递增 |
 
 **Agent 版本管理字段设计：**
@@ -188,22 +186,6 @@ GAgentManager - 企业级Agent管理平台
 | rollbackFromVersion | String | 否 | 如果是回滚版本，记录回滚来源的版本号 |
 | rollbackAvailable | Boolean | 是 | 是否可回滚到此版本 |
 | rollbackToVersion | String | 否 | 如果已回滚，记录回滚到的目标版本号 |
-
-**Agent 模板字段设计：**
-
-| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
-|--------|----------|----------|-----------|
-| templateId | String | 是 | 模板唯一标识，系统自动生成 |
-| templateName | String | 是 | 模板名称，2-50字符 |
-| description | Text | 否 | 模板描述，最大500字符 |
-| agentType | Enum | 是 | 适用Agent类型 |
-| configPreset | JSON | 是 | 预置配置（提示词、参数、默认绑定等） |
-| isOfficial | Boolean | 是 | 是否官方模板 |
-| creator | String | 是 | 创建人 |
-| useCount | Number | 是 | 被使用次数 |
-| createTime | DateTime | 是 | 创建时间 |
-| updater | String | 是 | 更新人，系统自动记录最后修改人 |
-| updateTime | DateTime | 是 | 更新时间 |
 
 **Agent 导入导出字段设计：**
 
@@ -1014,7 +996,7 @@ GAgentManager - 企业级Agent管理平台
    - 批量操作功能
    - 搜索和筛选功能
    - 导入导出功能
-   - Agent基础配置（名称、描述、参数、模板等）
+   - Agent基础配置（名称、描述、参数等）
    - Skill配置（Skill绑定、权限、参数）
    - MCP配置（MCP绑定、连接参数、状态监控）
    - 工作流管理（工作流关联、工具化配置、参数传递）
