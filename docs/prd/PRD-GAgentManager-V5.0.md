@@ -143,6 +143,7 @@ GAgentManager - 企业级Agent管理平台
 | version | String | 是 | 当前版本号，语义化版本号格式（如V1.0.0） |
 | creator | String | 是 | 创建人，关联用户ID |
 | createTime | DateTime | 是 | 创建时间，系统自动生成 |
+| updater | String | 是 | 更新人，关联用户ID，系统自动记录最后修改人 |
 | updateTime | DateTime | 是 | 最后更新时间，系统自动更新 |
 | lastPublishTime | DateTime | 否 | 最后发布时间 |
 
@@ -201,6 +202,7 @@ GAgentManager - 企业级Agent管理平台
 | creator | String | 是 | 创建人 |
 | useCount | Number | 是 | 被使用次数 |
 | createTime | DateTime | 是 | 创建时间 |
+| updater | String | 是 | 更新人，系统自动记录最后修改人 |
 | updateTime | DateTime | 是 | 更新时间 |
 
 **Agent 导入导出字段设计：**
@@ -335,6 +337,7 @@ GAgentManager - 企业级Agent管理平台
 | lastRequestTime | DateTime | 否 | 最近一次请求时间 |
 | creator | String | 是 | 创建人 |
 | createTime | DateTime | 是 | 创建时间 |
+| updater | String | 是 | 更新人，系统自动记录最后修改人 |
 | updateTime | DateTime | 是 | 更新时间 |
 
 **Agent 性能监控字段设计：**
@@ -386,6 +389,7 @@ GAgentManager - 企业级Agent管理平台
 | lastLoginIp | String | 否 | 最近登录IP地址 |
 | mfaEnabled | Boolean | 是 | 是否启用双因素认证 |
 | createTime | DateTime | 是 | 创建时间 |
+| updater | String | 是 | 更新人，系统自动记录最后修改人 |
 | updateTime | DateTime | 是 | 更新时间 |
 | expireTime | DateTime | 否 | 账号过期时间，空表示永久有效 |
 | loginFailCount | Number | 是 | 连续登录失败次数，达到阈值自动锁定 |
@@ -420,6 +424,7 @@ GAgentManager - 企业级Agent管理平台
 | isSystem | Boolean | 是 | 是否系统内置角色，内置角色不可删除 |
 | userCount | Number | 是 | 关联用户数量 |
 | createTime | DateTime | 是 | 创建时间 |
+| updater | String | 是 | 更新人，系统自动记录最后修改人 |
 | updateTime | DateTime | 是 | 更新时间 |
 | creator | String | 是 | 创建人 |
 
@@ -526,6 +531,7 @@ GAgentManager - 企业级Agent管理平台
 | notifyUsers | Array | 是 | 接收告警的用户/用户组ID列表 |
 | cooldownMinutes | Number | 否 | 冷却时间（分钟），同一告警重复通知间隔，默认30分钟 |
 | createTime | DateTime | 是 | 创建时间 |
+| updater | String | 是 | 更新人，系统自动记录最后修改人 |
 | updateTime | DateTime | 是 | 更新时间 |
 | creator | String | 是 | 创建人 |
 
@@ -676,6 +682,7 @@ GAgentManager - 企业级Agent管理平台
 | isFree | Boolean | 是 | 是否免费 |
 | minAgentVersion | String | 否 | 最低兼容Agent版本 |
 | createTime | DateTime | 是 | 上架时间 |
+| updater | String | 是 | 更新人，系统自动记录最后修改人 |
 | updateTime | DateTime | 是 | 更新时间 |
 
 **Skill 详情字段设计：**
@@ -771,6 +778,7 @@ GAgentManager - 企业级Agent管理平台
 | boundAgentCount | Number | 是 | 已绑定Agent数量 |
 | creator | String | 是 | 创建人 |
 | createTime | DateTime | 是 | 创建时间 |
+| updater | String | 是 | 更新人，系统自动记录最后修改人 |
 | updateTime | DateTime | 是 | 更新时间 |
 | lastConnectTime | DateTime | 否 | 最近连接时间 |
 | errorCount | Number | 是 | 累计错误次数 |
@@ -882,6 +890,7 @@ GAgentManager - 企业级Agent管理平台
 | quotaUsed | Number | 否 | 已使用配额 |
 | quotaTotal | Number | 否 | 总配额限制 |
 | createTime | DateTime | 是 | 创建时间 |
+| updater | String | 是 | 更新人，系统自动记录最后修改人 |
 | updateTime | DateTime | 是 | 更新时间 |
 
 **模型新增/编辑表单字段设计：**
@@ -937,6 +946,7 @@ GAgentManager - 企业级Agent管理平台
 | lastTestTime | DateTime | 否 | 最近测试时间 |
 | statistics | JSON | 是 | 统计数据（调用次数、Token消耗、成本等） |
 | createTime | DateTime | 是 | 创建时间 |
+| updater | String | 是 | 更新人，系统自动记录最后修改人 |
 | updateTime | DateTime | 是 | 更新时间 |
 
 **模型调用监控字段设计：**
