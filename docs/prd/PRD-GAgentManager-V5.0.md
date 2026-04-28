@@ -405,24 +405,26 @@ GAgentManager - 企业级Agent管理平台
 
 ### 5.1 系统架构概览
 - **前端层：** React 18 + TypeScript + Ant Design，支持Admin端和User端
-- **后端层：** Node.js + Express + TypeScript，RESTful API + GraphQL
-- **数据库：** PostgreSQL（主数据）+ Redis（缓存）+ MongoDB（日志和非结构化数据）
-- **存储：** 本地存储 + AWS S3（大文件存储）
+- **后端层：** Java 21 + Spring Boot 3.x + Spring AI + Spring AI Alibaba，RESTful API
+- **数据库：** MySQL 8.x（主数据）+ Redis（缓存）
+- **消息队列：** RocketMQ（异步处理和事件驱动）
+- **存储：** 本地存储 + MinIO / AWS S3（大文件和模型文件存储）
 - **容器化：** Docker + Kubernetes + Helm
 
 ### 5.2 关键技术组件
-- **身份认证：** JWT + OAuth2.0 + LDAP/Active Directory
-- **消息队列：** RabbitMQ（异步处理）
+- **身份认证：** Spring Security + JWT + OAuth2.0 + LDAP/Active Directory
+- **AI框架：** Spring AI + Spring AI Alibaba（统一AI模型调用、多模型适配、Prompt管理、RAG支持）
+- **消息队列：** RocketMQ（异步处理、事件驱动、消息可靠投递）
 - **日志系统：** ELK Stack（Elasticsearch, Logstash, Kibana）
 - **监控系统：** Prometheus + Grafana + Jaeger（链路追踪）
-- **API网关：** Kong + Traefik
-- **工作流引擎：** Temporal.io
-- **技能管理系统：** 微前端架构 + 插件化设计
-- **MCP协议支持：** 自研MCP客户端库
-- **模型管理：** TensorFlow Serving / TorchServe / MLflow
+- **API网关：** Spring Cloud Gateway
+- **工作流引擎：** Temporal.io / LiteFlow
+- **技能管理系统：** 插件化设计 + SPI扩展机制
+- **MCP协议支持：** Spring AI MCP Client
+- **模型管理：** Spring AI Model Registry + 自定义模型服务
 - **模型存储：** MinIO / AWS S3（模型文件存储）
-- **前端状态管理：** Zustand + React Query
-- **实时通信：** Socket.IO + WebSocket
+- **数据访问：** MyBatis Plus / Spring Data JPA
+- **实时通信：** WebSocket + SSE（Server-Sent Events）
 - **可视化引擎：** AntV G6（工作流可视化）
 
 ### 5.3 数据库设计
@@ -781,7 +783,7 @@ GAgentManager - 企业级Agent管理平台
 
 ---
 
-**文档版本：** 5.0  
-**最后更新：** 2026年04月27日  
+**文档版本：** 5.1  
+**最后更新：** 2026年04月28日  
 **作者：** GAgentManager 产品团队  
 **审核人：** 产品负责人、技术负责人、业务负责人
