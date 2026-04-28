@@ -4,22 +4,15 @@
 
 ## 文档列表
 
-- `GAgentManager_PRD.md` - 基础版产品需求文档
-- `GAgentManager_PRD_Updated.md` - 更新版产品需求文档
-- `GAgentManager_PRD_Detailed.md` - 详细版产品需求文档
-- `GAgentManager_PRD_Updated_V2.md` - 包含模型管理功能的详细产品需求文档
-- `GAgentManager_PRD_With_Model_Management.md` - 包含模型管理功能的最新产品需求文档
-- `GAgentManager_PRD_Final.md` - 最终完整版产品需求文档
-- `GAgentManager_PRD_With_User_Management.md` - 包含用户管理功能的最新产品需求文档（推荐使用）
+- `PRD-GAgentManager-V5.0.md` - 当前最新版产品需求文档
 
 ## 版本说明
 
-- **推荐使用：** `GAgentManager_PRD_With_User_Management.md` - 包含所有功能的最新完整版
-- **最终版：** `GAgentManager_PRD_Final.md` - 包含所有功能的最终版本
+- **最新版：** `PRD-GAgentManager-V5.0.md` - 包含所有功能的完整版本（V5.0）
 
 ## 内容概要
 
-最新版PRD文档包含以下核心功能：
+PRD文档包含以下核心功能：
 
 1. **Agent管理** - 管理企业内部所有的AI Agent
 2. **用户管理** - 控制用户访问权限和管理用户
