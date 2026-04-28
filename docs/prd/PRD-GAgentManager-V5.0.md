@@ -123,7 +123,6 @@ GAgentManager - 企业级Agent管理平台
 
 - Agent基本信息管理：名称、描述、图标
 - Agent参数配置：温度、最大Token数、系统提示词等核心参数
-- Agent导入导出：支持Agent配置的导入和导出
 
 **Agent 列表字段设计：**
 
@@ -186,22 +185,6 @@ GAgentManager - 企业级Agent管理平台
 | rollbackFromVersion | String | 否 | 如果是回滚版本，记录回滚来源的版本号 |
 | rollbackAvailable | Boolean | 是 | 是否可回滚到此版本 |
 | rollbackToVersion | String | 否 | 如果已回滚，记录回滚到的目标版本号 |
-
-**Agent 导入导出字段设计：**
-
-| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
-|--------|----------|----------|-----------|
-| exportId | String | 是 | 导出记录唯一标识 |
-| agentId | String | 是 | 导出的Agent ID |
-| exportFormat | Enum | 是 | 导出格式：JSON、YAML |
-| includeSkills | Boolean | 否 | 是否包含Skill配置，默认true |
-| includeMcps | Boolean | 否 | 是否包含MCP配置，默认true |
-| includeWorkflows | Boolean | 否 | 是否包含工作流配置，默认true |
-| exportFile | File | 是 | 导出的文件 |
-| exportTime | DateTime | 是 | 导出时间 |
-| exporter | String | 是 | 操作人 |
-| importResult | Enum | 否 | 导入结果：成功、失败、部分成功 |
-| importFailReason | Text | 否 | 导入失败原因 |
 
 ##### 4.1.1.2 Skill配置
 - Skill绑定：Agent只能使用Skill商店中已安装的Skill
@@ -1459,9 +1442,9 @@ GAgentManager - 企业级Agent管理平台
    - 测试连接
    - 配置连接参数
 
-7. **创建或导入Agent**
+7. **创建Agent**
    - 从首页进入Agent管理页面
-   - 选择创建新Agent或导入现有Agent
+   - 选择创建新Agent
    - 配置Agent基本信息和参数（基础配置）
    - 从模型管理中选择已注册模型
    - 从Skill商店中选择已安装Skill（Skill配置）
