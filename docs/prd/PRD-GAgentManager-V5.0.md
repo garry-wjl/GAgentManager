@@ -23,7 +23,7 @@ GAgentManager - 企业级Agent管理平台
 
 ### 1.4 成功定义
 - 用户能够在一个平台上管理所有Agent、模型、Skill、MCP和用户
-- Agent部署时间缩短60%
+- Agent发布时间缩短60%
 - Agent运行效率提升40%
 - 用户满意度达到85%以上
 
@@ -33,22 +33,22 @@ GAgentManager - 企业级Agent管理平台
 成为业界领先的企业级Agent管理平台，助力企业高效利用AI技术提升运营效率和竞争力。
 
 ### 2.2 产品使命
-通过提供易于使用、功能强大的Agent管理工具，让企业能够轻松部署、管理和优化其AI Agent生态。
+通过提供易于使用、功能强大的Agent管理工具，让企业能够轻松发布、管理和优化其AI Agent生态。
 
 ## 3. 目标用户群体
 
 ### 3.1 主要用户群体
-- **企业IT管理者：** 负责企业Agent系统的整体部署和管理
+- **企业IT管理者：** 负责企业Agent系统的整体发布和管理
   - 年龄：30-45岁
   - 职位：IT总监、技术负责人
   - 需求：统一管理企业AI资源，确保安全合规
   - 痛点：现有Agent分散管理，缺乏统一标准
 
-- **开发团队：** 需要部署和调试Agent的开发人员
+- **开发团队：** 需要发布和调试Agent的开发人员
   - 年龄：25-35岁
   - 职位：软件工程师、AI工程师
-  - 需求：快速部署、调试和监控Agent
-  - 痛点：部署流程复杂，调试困难
+  - 需求：快速发布、调试和监控Agent
+  - 痛点：发布流程复杂，调试困难
 
 - **数据科学家：** 需要管理AI模型的研究人员
   - 年龄：28-40岁
@@ -89,20 +89,124 @@ GAgentManager - 企业级Agent管理平台
 
 #### 4.1.1 Agent管理
 **功能描述：** 管理企业内部所有的AI Agent，提供完整的Agent生命周期管理和个性化配置能力
-**用户故事：** 作为开发人员，我希望能够快速创建、部署和管理AI Agent，并通过灵活的配置实现每个Agent的个性化定制，以便更有效地利用AI技术解决问题。
+**用户故事：** 作为开发人员，我希望能够快速创建、发布和管理AI Agent，并通过灵活的配置实现每个Agent的个性化定制，以便更有效地利用AI技术解决问题。
 
 **具体需求：**
 
 ##### 4.1.1.1 基础配置
 - Agent的创建：支持多种类型Agent的创建（聊天型、工作流型、分析型等）
-- Agent部署：支持一键部署功能
+- Agent发布：支持一键发布功能
 - Agent启动/停止：远程控制Agent的运行状态
 - Agent删除：安全删除不需要的Agent
 - Agent基本信息管理：名称、描述、图标、标签
 - Agent参数配置：温度、最大Token数、系统提示词等核心参数
-- Agent版本控制：支持版本管理和回滚
+- Agent版本控制：
+  - 采用语义化版本号（V主版本.次版本.修订号，如V1.0.0）
+  - 创建时自动生成初始版本V1.0.0
+  - 每次发布Agent时，版本号自动递增（修订号+1）
+  - 重大变更可手动递增主版本或次版本
+  - 支持版本历史记录查看，记录每个版本的变更内容
+  - 支持版本回滚：可回滚到任意历史版本
+  - 支持版本对比：对比两个版本之间的配置差异
+  - 版本分支管理：支持基于版本创建分支进行灰度测试
+  - 版本状态：草稿、已发布、已回滚、已废弃
 - Agent模板管理：支持Agent模板的创建和复用
 - Agent导入导出：支持Agent配置的导入和导出
+
+**Agent 列表字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| agentId | String | 是 | Agent唯一标识，系统自动生成 |
+| agentName | String | 是 | Agent名称，长度2-50字符，不能包含特殊字符 |
+| agentType | Enum | 是 | Agent类型：聊天型、工作流型、分析型、自动化型、混合型 |
+| description | Text | 否 | Agent描述信息，最大500字符 |
+| icon | File | 否 | Agent图标，支持PNG/JPG/SVG，最大2MB |
+| tags | Array | 否 | 标签列表，最多10个标签 |
+| status | Enum | 是 | 运行状态：未发布、已发布、运行中、已停止、异常、发布中 |
+| boundModel | String | 是 | 绑定的模型名称（来自模型管理） |
+| skillCount | Number | 是 | 已绑定Skill数量 |
+| mcpCount | Number | 是 | 已绑定MCP服务数量 |
+| workflowCount | Number | 是 | 已集成工作流数量 |
+| version | String | 是 | 当前版本号，语义化版本号格式（如V1.0.0） |
+| creator | String | 是 | 创建人，关联用户ID |
+| createTime | DateTime | 是 | 创建时间，系统自动生成 |
+| updateTime | DateTime | 是 | 最后更新时间，系统自动更新 |
+| lastPublishTime | DateTime | 否 | 最后发布时间 |
+
+**Agent 创建/编辑表单 - 基础配置字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| agentName | String | 是 | Agent名称，2-50字符，全局唯一 |
+| agentType | Enum | 是 | Agent类型：聊天型、工作流型、分析型、自动化型、混合型 |
+| description | Text | 否 | 描述信息，最大500字符 |
+| icon | File | 否 | 图标上传，支持PNG/JPG/SVG，最大2MB |
+| tags | Array | 否 | 标签，最多10个，支持自定义和从标签库选择 |
+| systemPrompt | Text | 否 | 系统提示词，最大5000字符，支持Markdown格式 |
+| temperature | Number | 否 | 温度参数，范围0.0-2.0，默认1.0，步长0.1 |
+| maxTokens | Number | 否 | 最大Token数，范围1-128000，默认4096 |
+| topP | Number | 否 | Top-P参数，范围0.0-1.0，默认1.0 |
+| topK | Number | 否 | Top-K参数，范围1-100，默认40 |
+| frequencyPenalty | Number | 否 | 频率惩罚，范围-2.0-2.0，默认0 |
+| presencePenalty | Number | 否 | 存在惩罚，范围-2.0-2.0，默认0 |
+| stopSequences | Array | 否 | 停止词序列，最多10个 |
+| responseFormat | Enum | 否 | 响应格式：text、json_object、structured_output |
+| timeoutSeconds | Number | 否 | 请求超时时间（秒），范围5-300，默认60 |
+| retryCount | Number | 否 | 失败重试次数，范围0-5，默认3 |
+| templateId | String | 否 | 基于模板创建时选择模板ID |
+| version | String | 是 | 版本号，创建时自动生成1.0.0，编辑时递增 |
+
+**Agent 版本管理字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| versionId | String | 是 | 版本唯一标识，系统自动生成 |
+| agentId | String | 是 | 所属Agent ID |
+| version | String | 是 | 版本号，语义化版本格式（V主版本.次版本.修订号） |
+| versionTag | Enum | 是 | 版本标签：草稿、已发布、运行中、已回滚、已废弃 |
+| changelog | Text | 否 | 版本变更说明，最大1000字符 |
+| configSnapshot | JSON | 是 | 版本配置快照（包含基础配置、Skill配置、MCP配置、工作流配置） |
+| diffFromPrevious | JSON | 否 | 与上一版本的差异对比JSON |
+| creator | String | 是 | 版本创建人 |
+| publishTime | DateTime | 否 | 发布时间，仅已发布/运行中状态有值 |
+| createTime | DateTime | 是 | 版本创建时间 |
+| isCurrentVersion | Boolean | 是 | 是否为当前活跃版本 |
+| isStable | Boolean | 是 | 是否为稳定版本 |
+| rollbackFromVersion | String | 否 | 如果是回滚版本，记录回滚来源的版本号 |
+| rollbackAvailable | Boolean | 是 | 是否可回滚到此版本 |
+| rollbackToVersion | String | 否 | 如果已回滚，记录回滚到的目标版本号 |
+
+**Agent 模板字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| templateId | String | 是 | 模板唯一标识，系统自动生成 |
+| templateName | String | 是 | 模板名称，2-50字符 |
+| description | Text | 否 | 模板描述，最大500字符 |
+| agentType | Enum | 是 | 适用Agent类型 |
+| configPreset | JSON | 是 | 预置配置（提示词、参数、默认绑定等） |
+| isOfficial | Boolean | 是 | 是否官方模板 |
+| creator | String | 是 | 创建人 |
+| useCount | Number | 是 | 被使用次数 |
+| createTime | DateTime | 是 | 创建时间 |
+| updateTime | DateTime | 是 | 更新时间 |
+
+**Agent 导入导出字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| exportId | String | 是 | 导出记录唯一标识 |
+| agentId | String | 是 | 导出的Agent ID |
+| exportFormat | Enum | 是 | 导出格式：JSON、YAML |
+| includeSkills | Boolean | 否 | 是否包含Skill配置，默认true |
+| includeMcps | Boolean | 否 | 是否包含MCP配置，默认true |
+| includeWorkflows | Boolean | 否 | 是否包含工作流配置，默认true |
+| exportFile | File | 是 | 导出的文件 |
+| exportTime | DateTime | 是 | 导出时间 |
+| exporter | String | 是 | 操作人 |
+| importResult | Enum | 否 | 导入结果：成功、失败、部分成功 |
+| importFailReason | Text | 否 | 导入失败原因 |
 
 ##### 4.1.1.2 Skill配置
 - Skill绑定：Agent只能使用Skill商店中已安装的Skill
@@ -111,12 +215,49 @@ GAgentManager - 企业级Agent管理平台
 - Skill权限管理：基于权限的Skill访问控制
 - Skill参数配置：为每个绑定的Skill配置独立参数
 
+**Agent Skill 配置字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| bindingId | String | 是 | 绑定关系唯一标识，系统自动生成 |
+| agentId | String | 是 | 所属Agent ID |
+| skillId | String | 是 | Skill ID（来自Skill商店已安装的Skill） |
+| skillName | String | 是 | Skill名称，只读，关联展示 |
+| skillVersion | String | 是 | Skill版本，只读 |
+| isEnabled | Boolean | 是 | 是否启用此Skill，默认true |
+| priority | Number | 否 | 优先级，数值越大优先级越高，范围0-100，默认50 |
+| skillParams | JSON | 否 | Skill独立参数配置，键值对格式 |
+| autoEnable | Boolean | 否 | 是否自动启用新安装的匹配Skill，默认false |
+| bindTime | DateTime | 是 | 绑定时间，系统自动生成 |
+| bindUser | String | 是 | 绑定操作人 |
+| description | Text | 否 | 绑定说明，最大200字符 |
+
 ##### 4.1.1.3 MCP配置
 - MCP绑定：Agent只能使用MCP管理中已配置的MCP服务
 - MCP可见性控制：配置哪些MCP服务对该Agent可见
 - MCP关联配置：支持特定MCP服务与Agent的关联设置
 - MCP连接参数：为每个绑定的MCP配置独立连接参数
 - MCP状态监控：查看Agent关联MCP服务的运行状态
+
+**Agent MCP 配置字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| bindingId | String | 是 | 绑定关系唯一标识，系统自动生成 |
+| agentId | String | 是 | 所属Agent ID |
+| mcpId | String | 是 | MCP服务ID（来自MCP管理已配置的服务） |
+| mcpName | String | 是 | MCP服务名称，只读，关联展示 |
+| mcpVersion | String | 是 | MCP协议版本，只读 |
+| isEnabled | Boolean | 是 | 是否启用此MCP，默认true |
+| connectionParams | JSON | 否 | 独立连接参数配置（可覆盖全局MCP配置） |
+| timeoutSeconds | Number | 否 | 连接超时时间（秒），范围5-300，默认30 |
+| retryEnabled | Boolean | 否 | 是否启用自动重试，默认true |
+| maxRetries | Number | 否 | 最大重试次数，范围0-10，默认3 |
+| healthCheckInterval | Number | 否 | 健康检查间隔（秒），范围10-300，默认60 |
+| bindTime | DateTime | 是 | 绑定时间，系统自动生成 |
+| bindUser | String | 是 | 绑定操作人 |
+| lastStatus | Enum | 是 | 最近状态：正常、异常、超时、未连接 |
+| lastCheckTime | DateTime | 否 | 最近一次健康检查时间 |
 
 ##### 4.1.1.4 工作流管理
 - 工作流创建：支持在Agent下创建新的工作流定义
@@ -130,13 +271,83 @@ GAgentManager - 企业级Agent管理平台
 - 工作流工具化：将工作流作为Agent的可调用工具
 - 工作流参数传递：配置Agent与工作流之间的参数传递规则
 
+**Agent 工作流管理字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| workflowId | String | 是 | 工作流唯一标识，系统自动生成 |
+| agentId | String | 是 | 所属Agent ID |
+| workflowName | String | 是 | 工作流名称，2-100字符 |
+| description | Text | 否 | 工作流描述，最大500字符 |
+| workflowDef | JSON | 是 | 工作流定义（节点、连线、逻辑），使用DSL格式 |
+| triggerType | Enum | 是 | 触发方式：手动触发、事件触发、定时触发 |
+| status | Enum | 是 | 状态：草稿、已发布、已下线、已删除 |
+| isToolEnabled | Boolean | 是 | 是否作为Agent工具可用，默认false |
+| toolName | String | 否 | 作为工具时的调用名称，2-50字符，字母开头 |
+| toolDescription | Text | 否 | 工具描述，帮助Agent理解何时调用 |
+| inputParams | JSON | 是 | 输入参数定义，JSON Schema格式 |
+| outputParams | JSON | 是 | 输出参数定义，JSON Schema格式 |
+| paramMapping | JSON | 否 | Agent与工作流参数映射规则 |
+| timeoutSeconds | Number | 否 | 执行超时（秒），范围10-3600，默认300 |
+| version | String | 是 | 工作流版本号，语义化版本格式 |
+| creator | String | 是 | 创建人 |
+| createTime | DateTime | 是 | 创建时间 |
+| publishTime | DateTime | 否 | 最近发布时间 |
+| lastExecTime | DateTime | 否 | 最近执行时间 |
+| execCount | Number | 是 | 累计执行次数 |
+| successRate | Number | 是 | 执行成功率，百分比 |
+
 ##### 4.1.1.5 监控与分析
 - Agent状态监控：实时监控Agent运行状态
 - Agent性能分析：提供性能指标分析报告
 - 模型绑定：Agent只能使用模型管理中已注册的模型
 
+**Agent 详情页字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| agentId | String | 是 | Agent唯一标识 |
+| agentName | String | 是 | Agent名称 |
+| agentType | Enum | 是 | Agent类型 |
+| status | Enum | 是 | 运行状态：未发布、已发布、运行中、已停止、异常、发布中 |
+| description | Text | 否 | 描述信息 |
+| icon | File | 否 | 图标 |
+| tags | Array | 否 | 标签列表 |
+| version | String | 是 | 当前版本 |
+| boundModel | String | 是 | 绑定模型 |
+| systemPrompt | Text | 否 | 系统提示词 |
+| totalRequests | Number | 是 | 累计请求次数 |
+| avgResponseTime | Number | 是 | 平均响应时间（毫秒） |
+| errorRate | Number | 是 | 错误率（百分比） |
+| uptime | Number | 是 | 运行时长（小时） |
+| cpuUsage | Number | 是 | CPU使用率（百分比） |
+| memoryUsage | Number | 是 | 内存使用率（百分比） |
+| lastRequestTime | DateTime | 否 | 最近一次请求时间 |
+| creator | String | 是 | 创建人 |
+| createTime | DateTime | 是 | 创建时间 |
+| updateTime | DateTime | 是 | 更新时间 |
+
+**Agent 性能监控字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| agentId | String | 是 | Agent ID |
+| timestamp | DateTime | 是 | 数据采集时间 |
+| requestCount | Number | 是 | 请求次数（统计周期内） |
+| avgResponseTime | Number | 是 | 平均响应时间（毫秒） |
+| p95ResponseTime | Number | 是 | P95响应时间（毫秒） |
+| p99ResponseTime | Number | 是 | P99响应时间（毫秒） |
+| successRate | Number | 是 | 成功率（百分比） |
+| errorCount | Number | 是 | 错误次数 |
+| tokenUsage | Number | 是 | Token消耗总量 |
+| cost | Number | 是 | 调用成本（元） |
+| cpuUsage | Number | 是 | CPU使用率（百分比） |
+| memoryUsage | Number | 是 | 内存使用率（百分比） |
+| activeConnections | Number | 是 | 活跃连接数 |
+| queueLength | Number | 是 | 队列长度 |
+
 **验收标准：**
-- 用户能够在5分钟内创建并部署一个新的Agent
+- 用户能够在5分钟内创建并发布一个新的Agent
 - 支持至少10种常见Agent类型的创建
 - 版本回滚成功率100%
 - Agent只能使用系统内已注册的模型、Skill和MCP服务
@@ -147,6 +358,104 @@ GAgentManager - 企业级Agent管理平台
 #### 4.1.2 用户权限管理
 **功能描述：** 控制不同用户对平台功能的访问权限，并提供全面的用户管理功能
 **用户故事：** 作为管理员，我希望能够精确控制每个用户的权限，同时能够有效管理所有平台用户，以确保企业数据安全和操作效率。
+
+**用户列表字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| userId | String | 是 | 用户唯一标识，系统自动生成（UUID） |
+| username | String | 是 | 登录用户名，3-30字符，字母数字下划线，全局唯一 |
+| realName | String | 是 | 真实姓名，2-50字符 |
+| email | String | 是 | 邮箱地址，标准邮箱格式，全局唯一 |
+| phone | String | 否 | 手机号，11位数字（中国大陆） |
+| department | String | 否 | 所属部门 |
+| avatar | File | 否 | 头像图片，支持PNG/JPG，最大1MB |
+| role | Enum | 是 | 角色：超级管理员、管理员、开发者、数据科学家、普通用户、访客 |
+| status | Enum | 是 | 状态：激活、停用、锁定 |
+| lastLoginTime | DateTime | 否 | 最近登录时间 |
+| lastLoginIp | String | 否 | 最近登录IP地址 |
+| mfaEnabled | Boolean | 是 | 是否启用双因素认证 |
+| createTime | DateTime | 是 | 创建时间 |
+| updateTime | DateTime | 是 | 更新时间 |
+| expireTime | DateTime | 否 | 账号过期时间，空表示永久有效 |
+| loginFailCount | Number | 是 | 连续登录失败次数，达到阈值自动锁定 |
+
+**用户创建/编辑表单字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| username | String | 是 | 登录用户名，3-30字符，字母数字下划线，不可重复 |
+| password | String | 是 | 密码，创建时必填，8-32字符，需包含大小写字母、数字、特殊字符 |
+| confirmPassword | String | 是 | 确认密码，必须与密码一致 |
+| realName | String | 是 | 真实姓名，2-50字符 |
+| email | String | 是 | 邮箱地址，标准格式，不可重复 |
+| phone | String | 否 | 手机号，11位数字 |
+| department | String | 否 | 所属部门，支持从部门列表选择 |
+| role | Enum | 是 | 角色：超级管理员、管理员、开发者、数据科学家、普通用户、访客 |
+| status | Enum | 是 | 状态：激活、停用，创建时默认激活 |
+| expireTime | DateTime | 否 | 账号过期时间，不填表示永久有效 |
+| mfaEnabled | Boolean | 否 | 是否强制启用双因素认证，默认关闭 |
+| userGroups | Array | 否 | 所属用户组ID列表 |
+| permissions | Array | 否 | 额外权限列表（可覆盖角色默认权限） |
+| notes | Text | 否 | 备注信息，最大500字符 |
+
+**角色与权限配置字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| roleId | String | 是 | 角色唯一标识，系统自动生成 |
+| roleName | String | 是 | 角色名称，2-50字符，全局唯一 |
+| description | Text | 否 | 角色描述，最大200字符 |
+| permissions | Array | 是 | 权限列表，每个权限项为模块+操作（如agent:read, agent:write） |
+| isSystem | Boolean | 是 | 是否系统内置角色，内置角色不可删除 |
+| userCount | Number | 是 | 关联用户数量 |
+| createTime | DateTime | 是 | 创建时间 |
+| updateTime | DateTime | 是 | 更新时间 |
+| creator | String | 是 | 创建人 |
+
+**权限模板字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| templateId | String | 是 | 模板唯一标识，系统自动生成 |
+| templateName | String | 是 | 模板名称，2-50字符，全局唯一 |
+| description | Text | 否 | 模板描述，最大200字符 |
+| permissions | Array | 是 | 权限列表 |
+| scope | Enum | 是 | 适用范围：全局、部门级、个人级 |
+| isSystem | Boolean | 是 | 是否系统内置 |
+| createTime | DateTime | 是 | 创建时间 |
+| creator | String | 是 | 创建人 |
+
+**用户组字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| groupId | String | 是 | 用户组唯一标识，系统自动生成 |
+| groupName | String | 是 | 用户组名称，2-50字符 |
+| description | Text | 否 | 描述信息，最大200字符 |
+| parentId | String | 否 | 父用户组ID，支持层级结构 |
+| members | Array | 是 | 成员用户ID列表 |
+| permissions | Array | 否 | 组级别权限 |
+| createTime | DateTime | 是 | 创建时间 |
+| creator | String | 是 | 创建人 |
+
+**用户操作日志字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| logId | String | 是 | 日志唯一标识，系统自动生成 |
+| userId | String | 是 | 操作用户ID |
+| username | String | 是 | 操作用户名 |
+| action | String | 是 | 操作类型（创建Agent、删除用户等） |
+| module | Enum | 是 | 所属模块：Agent管理、用户管理、Skill商店、MCP管理、模型管理、系统设置 |
+| targetId | String | 否 | 操作目标对象ID |
+| targetName | String | 否 | 操作目标对象名称 |
+| detail | JSON | 否 | 操作详情（变更前后数据） |
+| ip | String | 是 | 操作IP地址 |
+| userAgent | String | 否 | 浏览器/客户端信息 |
+| status | Enum | 是 | 操作结果：成功、失败 |
+| errorMessage | Text | 否 | 失败时的错误信息 |
+| createTime | DateTime | 是 | 操作时间 |
 
 **具体需求：**
 - 多级用户角色：管理员、开发者、数据科学家、普通用户、访客
@@ -173,6 +482,80 @@ GAgentManager - 企业级Agent管理平台
 **功能描述：** 实时监控系统和Agent运行状态，提供告警功能
 **用户故事：** 作为系统管理员，我希望能够及时了解系统和Agent的运行状况，并在出现问题时收到告警。
 
+**监控指标字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| metricId | String | 是 | 指标唯一标识，系统自动生成 |
+| metricName | String | 是 | 指标名称（如CPU使用率、响应时间、请求量等） |
+| metricType | Enum | 是 | 指标类型：系统级、Agent级、模型级、MCP级 |
+| targetId | String | 是 | 监控目标ID（Agent ID、模型ID等） |
+| currentValue | Number | 是 | 当前值 |
+| unit | String | 是 | 单位（%、ms、次/秒、个等） |
+| trend | Enum | 是 | 趋势：上升、下降、平稳 |
+| threshold | JSON | 是 | 阈值配置：警告阈值、严重阈值 |
+| collectionInterval | Number | 是 | 采集间隔（秒），最小30秒 |
+| retentionDays | Number | 是 | 数据保留天数，默认30天 |
+| lastCollectTime | DateTime | 是 | 最近采集时间 |
+| historyData | Array | 是 | 历史数据点列表（时间戳+值） |
+
+**告警规则字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| ruleId | String | 是 | 规则唯一标识，系统自动生成 |
+| ruleName | String | 是 | 规则名称，2-100字符 |
+| description | Text | 否 | 规则描述，最大500字符 |
+| isEnabled | Boolean | 是 | 是否启用，默认true |
+| metricId | String | 是 | 关联的监控指标ID |
+| condition | Enum | 是 | 条件：大于、小于、等于、大于等于、小于等于 |
+| threshold | Number | 是 | 阈值 |
+| duration | Number | 是 | 持续时间（秒），持续超过阈值才触发告警 |
+| severity | Enum | 是 | 严重级别：信息、警告、严重、致命 |
+| notifyChannels | Array | 是 | 通知渠道：邮件、短信、系统通知、Webhook |
+| notifyUsers | Array | 是 | 接收告警的用户/用户组ID列表 |
+| cooldownMinutes | Number | 否 | 冷却时间（分钟），同一告警重复通知间隔，默认30分钟 |
+| createTime | DateTime | 是 | 创建时间 |
+| updateTime | DateTime | 是 | 更新时间 |
+| creator | String | 是 | 创建人 |
+
+**告警历史字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| alertId | String | 是 | 告警唯一标识，系统自动生成 |
+| ruleId | String | 是 | 触发规则ID |
+| ruleName | String | 是 | 触发规则名称 |
+| severity | Enum | 是 | 严重级别：信息、警告、严重、致命 |
+| targetId | String | 是 | 告警目标对象ID |
+| targetName | String | 是 | 告警目标对象名称 |
+| metricValue | Number | 是 | 触发时的指标值 |
+| threshold | Number | 是 | 触发阈值 |
+| message | Text | 是 | 告警详情描述 |
+| status | Enum | 是 | 处理状态：未处理、处理中、已解决、已忽略 |
+| assignee | String | 否 | 处理人 |
+| resolveTime | DateTime | 否 | 解决时间 |
+| resolveNote | Text | 否 | 处理说明 |
+| notifyStatus | Enum | 是 | 通知状态：已发送、发送失败 |
+| triggerTime | DateTime | 是 | 触发时间 |
+| endTime | DateTime | 否 | 告警结束时间（指标恢复正常的时间） |
+
+**告警通知方式配置字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| notifyId | String | 是 | 通知配置唯一标识 |
+| channelType | Enum | 是 | 渠道类型：邮件、短信、系统通知、Webhook、企业微信、钉钉 |
+| channelName | String | 是 | 渠道名称，2-50字符 |
+| isEnabled | Boolean | 是 | 是否启用 |
+| recipients | Array | 是 | 接收人列表（邮箱地址、手机号、用户ID等） |
+| webhookUrl | String | 否 | Webhook URL（Webhook渠道时必填） |
+| webhookSecret | String | 否 | Webhook签名密钥（加密存储） |
+| templateId | String | 是 | 消息模板ID |
+| severityFilter | Array | 否 | 接收的告警级别列表，空表示接收全部 |
+| createTime | DateTime | 是 | 创建时间 |
+| creator | String | 是 | 创建人 |
+
 **具体需求：**
 - Agent运行状态监控：CPU、内存、磁盘使用率等
 - 性能指标监控：响应时间、吞吐量、成功率、错误率
@@ -190,6 +573,62 @@ GAgentManager - 企业级Agent管理平台
 **功能描述：** 为用户提供个性化的信息展示和快速操作入口
 **用户故事：** 作为普通用户，我希望在登录后能看到最重要的信息和常用功能，提高工作效率。
 
+**首页仪表盘组件字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| componentId | String | 是 | 组件唯一标识，系统自动生成 |
+| componentName | String | 是 | 组件名称（如系统概览、快捷操作、告警汇总等） |
+| componentType | Enum | 是 | 组件类型：统计卡片、图表、列表、快捷入口、通知中心 |
+| position | Number | 是 | 显示位置序号，数值越小越靠前 |
+| size | Enum | 是 | 组件大小：小（1/4宽度）、中（1/2宽度）、大（全宽度） |
+| isVisible | Boolean | 是 | 是否可见 |
+| applicableRoles | Array | 是 | 适用角色列表（哪些角色可见此组件） |
+| dataRefreshInterval | Number | 是 | 数据刷新间隔（秒），最小30秒 |
+| config | JSON | 否 | 组件个性化配置 |
+
+**系统概览卡数字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| cardId | String | 是 | 卡片唯一标识 |
+| title | String | 是 | 卡片标题（如Agent总数、在线用户数等） |
+| value | Number/String | 是 | 展示数值 |
+| unit | String | 否 | 单位（个、%、次等） |
+| trend | Number | 否 | 环比变化率（正数上升，负数下降） |
+| icon | String | 是 | 图标标识 |
+| link | String | 否 | 点击跳转链接 |
+| color | String | 是 | 卡片主题色 |
+
+**快捷操作配置字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| shortcutId | String | 是 | 快捷操作唯一标识 |
+| name | String | 是 | 操作名称（如创建Agent、安装Skill等） |
+| icon | String | 是 | 图标标识 |
+| link | String | 是 | 跳转路由/链接 |
+| sortOrder | Number | 是 | 排序序号 |
+| applicableRoles | Array | 是 | 可用角色列表 |
+| isPinned | Boolean | 是 | 是否固定显示 |
+
+**通知中心字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| noticeId | String | 是 | 通知唯一标识 |
+| title | String | 是 | 通知标题，最大100字符 |
+| content | Text | 是 | 通知内容，最大2000字符 |
+| type | Enum | 是 | 类型：系统通知、告警通知、任务提醒、版本更新 |
+| severity | Enum | 是 | 级别：信息、警告、严重 |
+| sender | String | 是 | 发送者（系统/用户） |
+| targetUsers | Array | 否 | 目标用户列表，空表示全员通知 |
+| isRead | Boolean | 是 | 当前用户是否已读 |
+| readTime | DateTime | 否 | 阅读时间 |
+| link | String | 否 | 关联链接 |
+| expireTime | DateTime | 否 | 过期时间，过期后不再显示 |
+| createTime | DateTime | 是 | 创建时间 |
+
 **具体需求：**
 - 个性化首页：基于用户角色和偏好的定制化展示
 - 关键指标概览：系统健康度、Agent数量、运行状态等
@@ -206,6 +645,82 @@ GAgentManager - 企业级Agent管理平台
 #### 4.1.5 Skill商店
 **功能描述：** 提供Skill的发现、安装、更新和管理功能，为Agent提供可使用的功能扩展
 **用户故事：** 作为用户，我希望能够方便地找到并安装各种有用的Skill来增强Agent的功能。
+
+**Skill 列表字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| skillId | String | 是 | Skill唯一标识，系统自动生成 |
+| skillName | String | 是 | Skill名称，2-50字符 |
+| description | Text | 是 | 功能描述，最大500字符 |
+| icon | File | 否 | Skill图标，支持PNG/JPG/SVG，最大2MB |
+| category | Enum | 是 | 分类：数据处理、工具调用、内容生成、搜索查询、系统集成、自定义 |
+| tags | Array | 否 | 标签列表，最多20个 |
+| version | String | 是 | 当前版本号 |
+| author | String | 是 | 开发者/作者名称 |
+| installCount | Number | 是 | 安装次数 |
+| rating | Number | 是 | 平均评分，范围0.0-5.0 |
+| ratingCount | Number | 是 | 评分人数 |
+| status | Enum | 是 | 状态：未安装、已安装、有更新可用 |
+| isOfficial | Boolean | 是 | 是否官方Skill |
+| isFree | Boolean | 是 | 是否免费 |
+| minAgentVersion | String | 否 | 最低兼容Agent版本 |
+| createTime | DateTime | 是 | 上架时间 |
+| updateTime | DateTime | 是 | 更新时间 |
+
+**Skill 详情字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| skillId | String | 是 | Skill唯一标识 |
+| skillName | String | 是 | Skill名称 |
+| description | Text | 是 | 详细描述，支持Markdown格式 |
+| icon | File | 否 | 图标 |
+| screenshots | Array | 否 | 截图列表，最多10张，支持PNG/JPG |
+| category | Enum | 是 | 分类 |
+| tags | Array | 否 | 标签列表 |
+| version | String | 是 | 当前版本 |
+| changelog | Text | 是 | 版本更新日志 |
+| dependencies | Array | 否 | 依赖的其他Skill列表 |
+| configSchema | JSON | 否 | 配置项Schema，JSON Schema格式 |
+| author | String | 是 | 作者信息 |
+| authorUrl | String | 否 | 作者主页 |
+| documentation | String | 否 | 文档链接 |
+| license | String | 否 | 许可证类型 |
+| installCount | Number | 是 | 安装次数 |
+| rating | Number | 是 | 平均评分 |
+| installStatus | Enum | 是 | 安装状态：未安装、已安装、安装中、安装失败 |
+| installedVersion | String | 否 | 已安装版本号（如果已安装） |
+| hasUpdate | Boolean | 是 | 是否有可用更新 |
+
+**Skill 评论字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| reviewId | String | 是 | 评论唯一标识 |
+| skillId | String | 是 | Skill ID |
+| userId | String | 是 | 评论用户ID |
+| username | String | 是 | 评论用户名 |
+| rating | Number | 是 | 评分，1-5星 |
+| content | Text | 是 | 评论内容，最大1000字符 |
+| isVerified | Boolean | 是 | 是否已安装用户（仅已安装用户可评论） |
+| createTime | DateTime | 是 | 评论时间 |
+| replyCount | Number | 是 | 回复数量 |
+
+**Skill 安装记录字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| installId | String | 是 | 安装记录唯一标识 |
+| skillId | String | 是 | Skill ID |
+| skillName | String | 是 | Skill名称 |
+| installedVersion | String | 是 | 安装的版本号 |
+| installStatus | Enum | 是 | 安装状态：安装中、成功、失败、已卸载 |
+| installUser | String | 是 | 操作人 |
+| installTime | DateTime | 是 | 安装时间 |
+| failReason | Text | 否 | 失败原因 |
+| configData | JSON | 否 | 安装后的配置数据 |
+| boundAgents | Array | 否 | 已绑定此Skill的Agent列表 |
 
 **具体需求：**
 - Skill分类浏览：按功能、行业、热度等维度分类
@@ -230,6 +745,92 @@ GAgentManager - 企业级Agent管理平台
 **功能描述：** 管理Model Context Protocol（MCP）服务和连接，为Agent提供模型上下文协议支持
 **用户故事：** 作为开发者，我希望能够方便地配置和管理MCP服务，以便更好地为Agent提供不同AI模型的集成能力。
 
+**MCP 服务列表字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| mcpId | String | 是 | MCP服务唯一标识，系统自动生成 |
+| mcpName | String | 是 | 服务名称，2-50字符 |
+| description | Text | 否 | 描述信息，最大500字符 |
+| serverUrl | String | 是 | MCP服务器地址，有效的URL格式 |
+| protocolVersion | Enum | 是 | 协议版本：v1.0、v1.1、v2.0 |
+| transportType | Enum | 是 | 传输类型：stdio、sse、http |
+| status | Enum | 是 | 状态：未连接、连接中、已连接、异常 |
+| healthStatus | Enum | 是 | 健康状态：健康、亚健康、不健康 |
+| responseTime | Number | 否 | 平均响应时间（毫秒） |
+| boundAgentCount | Number | 是 | 已绑定Agent数量 |
+| creator | String | 是 | 创建人 |
+| createTime | DateTime | 是 | 创建时间 |
+| updateTime | DateTime | 是 | 更新时间 |
+| lastConnectTime | DateTime | 否 | 最近连接时间 |
+| errorCount | Number | 是 | 累计错误次数 |
+
+**MCP 配置表单字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| mcpName | String | 是 | 服务名称，2-50字符，全局唯一 |
+| description | Text | 否 | 描述信息，最大500字符 |
+| serverUrl | String | 是 | MCP服务器地址 |
+| protocolVersion | Enum | 是 | 协议版本：v1.0、v1.1、v2.0 |
+| transportType | Enum | 是 | 传输类型：stdio、sse、http |
+| authType | Enum | 是 | 认证方式：无认证、API Key、Bearer Token、OAuth2.0、Basic Auth |
+| credentials | JSON | 否 | 认证凭据（加密存储），根据authType动态表单 |
+| timeoutSeconds | Number | 否 | 连接超时（秒），范围5-300，默认30 |
+| retryEnabled | Boolean | 否 | 是否启用自动重试，默认true |
+| maxRetries | Number | 否 | 最大重试次数，范围0-10，默认3 |
+| healthCheckUrl | String | 否 | 健康检查URL |
+| healthCheckInterval | Number | 否 | 健康检查间隔（秒），范围10-300，默认60 |
+| envVariables | JSON | 否 | 环境变量配置，键值对格式 |
+| command | String | 否 | 启动命令（stdio传输方式时需要） |
+| args | Array | 否 | 启动参数列表 |
+| tags | Array | 否 | 标签列表 |
+| templateId | String | 否 | 基于模板创建时选择模板ID |
+
+**MCP 日志字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| logId | String | 是 | 日志唯一标识 |
+| mcpId | String | 是 | MCP服务ID |
+| logLevel | Enum | 是 | 日志级别：DEBUG、INFO、WARN、ERROR |
+| message | Text | 是 | 日志内容 |
+| requestUrl | String | 否 | 请求URL |
+| statusCode | Number | 否 | 响应状态码 |
+| responseTime | Number | 否 | 响应时间（毫秒） |
+| errorCode | String | 否 | 错误码 |
+| createTime | DateTime | 是 | 日志时间 |
+
+**MCP 模板字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| templateId | String | 是 | 模板唯一标识 |
+| templateName | String | 是 | 模板名称，2-50字符 |
+| description | Text | 否 | 模板描述，最大200字符 |
+| configPreset | JSON | 是 | 预置配置（URL、协议版本、认证方式等） |
+| category | Enum | 是 | 分类：数据库、文件存储、搜索、代码工具、其他 |
+| isOfficial | Boolean | 是 | 是否官方模板 |
+| useCount | Number | 是 | 使用次数 |
+| createTime | DateTime | 是 | 创建时间 |
+
+**用户批量导入/导出字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| batchId | String | 是 | 批次唯一标识 |
+| fileName | String | 是 | 导入/导出文件名 |
+| fileType | Enum | 是 | 文件格式：CSV、Excel |
+| totalRows | Number | 是 | 总数据行数 |
+| successRows | Number | 是 | 成功处理行数 |
+| failRows | Number | 是 | 失败行数 |
+| failDetails | Array | 否 | 失败行详情（行号+错误原因） |
+| operator | String | 是 | 操作人 |
+| operationType | Enum | 是 | 操作类型：导入、导出 |
+| status | Enum | 是 | 状态：处理中、成功、部分成功、失败 |
+| createTime | DateTime | 是 | 操作时间 |
+| completeTime | DateTime | 否 | 完成时间 |
+
 **具体需求：**
 - MCP服务配置：MCP服务器地址、认证信息、连接参数
 - MCP状态监控：连接状态、服务健康度、响应时间
@@ -249,29 +850,125 @@ GAgentManager - 企业级Agent管理平台
 - Agent只能使用已授权的MCP服务
 
 #### 4.1.7 模型管理
-**功能描述：** 管理AI模型的生命周期，包括模型的上传、配置、部署和监控，为Agent提供可使用的模型资源
-**用户故事：** 作为数据科学家，我希望能够方便地管理AI模型，包括上传自定义模型、配置模型参数、部署到不同环境，以便更好地为Agent提供模型支持。
+**功能描述：** 管理平台接入的大语言模型（LLM）资源，支持模型的注册、配置、启用/禁用等操作，为Agent提供可选用的模型列表
+**用户故事：** 作为系统管理员，我希望能够统一管理平台接入的各类大模型（如 DeepSeek、GPT-4o、Claude 等），包括配置 API 连接信息、调整模型参数、控制模型的可用状态，以便为 Agent 提供灵活的模型选择能力。
+
+**模型列表字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| modelId | String | 是 | 模型唯一标识，系统自动生成 |
+| modelName | String | 是 | 模型名称，2-50字符 |
+| provider | Enum | 是 | 提供商：OpenAI、Anthropic、DeepSeek、阿里通义、百度文心、智谱、Google、Meta、本地部署、其他 |
+| apiType | Enum | 是 | API类型：OpenAI兼容、Anthropic、自定义 |
+| status | Enum | 是 | 状态：已启用、已禁用、异常 |
+| capabilities | Array | 是 | 能力标签：对话、补全、函数调用、多模态、JSON输出、Structured Output |
+| boundAgentCount | Number | 是 | 已绑定Agent数量 |
+| avgResponseTime | Number | 否 | 平均响应时间（毫秒） |
+| totalCalls | Number | 是 | 累计调用次数 |
+| todayCalls | Number | 是 | 今日调用次数 |
+| todayTokenCount | Number | 是 | 今日Token消耗量 |
+| cost | Number | 是 | 今日调用成本（元） |
+| quotaUsed | Number | 否 | 已使用配额 |
+| quotaTotal | Number | 否 | 总配额限制 |
+| createTime | DateTime | 是 | 创建时间 |
+| updateTime | DateTime | 是 | 更新时间 |
+
+**模型新增/编辑表单字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| modelName | String | 是 | 模型名称，2-50字符，全局唯一 |
+| provider | Enum | 是 | 提供商 |
+| apiType | Enum | 是 | API类型：OpenAI兼容、Anthropic、自定义 |
+| baseUrl | String | 是 | API端点地址，有效的URL格式 |
+| apiKey | String | 是 | API密钥（加密存储），编辑时可留空表示不修改 |
+| timeoutSeconds | Number | 否 | 超时时间（秒），范围5-300，默认30 |
+| maxRetries | Number | 否 | 最大重试次数，范围0-10，默认3 |
+| maxTokens | Number | 否 | 最大Token数上限，范围1-200000 |
+| minTemperature | Number | 否 | 温度下限，范围0.0-2.0，默认0.0 |
+| maxTemperature | Number | 否 | 温度上限，范围0.0-2.0，默认2.0 |
+| defaultTemperature | Number | 否 | 默认温度，范围0.0-2.0，默认1.0 |
+| defaultTopP | Number | 否 | 默认Top-P，范围0.0-1.0 |
+| defaultTopK | Number | 否 | 默认Top-K，范围1-100 |
+| capabilities | Array | 是 | 能力标签多选：对话、补全、函数调用、工具调用、多模态输入、JSON输出、Structured Output |
+| inputTypes | Array | 是 | 支持的输入类型：文本、图片、音频、视频 |
+| outputTypes | Array | 是 | 支持的输出类型：文本、JSON、图片 |
+| description | Text | 否 | 模型描述，最大500字符 |
+| category | String | 否 | 分类/分组名称 |
+| inputPrice | Number | 否 | 输入Token单价（元/百万Token），非负数 |
+| outputPrice | Number | 否 | 输出Token单价（元/百万Token），非负数 |
+| dailyTokenQuota | Number | 否 | 每日Token配额上限，0表示不限 |
+| dailyRequestQuota | Number | 否 | 每日请求配额上限，0表示不限 |
+| qpsLimit | Number | 否 | QPS限制（每秒请求数），0表示不限 |
+| tpmLimit | Number | 否 | TPM限制（每分钟Token数），0表示不限 |
+| isEnabled | Boolean | 是 | 是否启用，默认true |
+| sortOrder | Number | 否 | 列表排序序号，数值越小越靠前 |
+
+**模型详情字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| modelId | String | 是 | 模型唯一标识 |
+| modelName | String | 是 | 模型名称 |
+| provider | Enum | 是 | 提供商 |
+| apiType | Enum | 是 | API类型 |
+| baseUrl | String | 是 | API端点地址 |
+| status | Enum | 是 | 状态 |
+| capabilities | Array | 是 | 能力标签列表 |
+| inputTypes | Array | 是 | 支持的输入类型 |
+| outputTypes | Array | 是 | 支持的输出类型 |
+| config | JSON | 是 | 完整配置信息（不含API Key明文） |
+| pricing | JSON | 是 | 价格配置（输入/输出单价） |
+| quota | JSON | 是 | 配额配置 |
+| rateLimit | JSON | 是 | 速率限制配置 |
+| boundAgents | Array | 是 | 已绑定Agent列表 |
+| healthCheckResult | Enum | 否 | 最近连通性测试结果：通过、失败、未测试 |
+| lastTestTime | DateTime | 否 | 最近测试时间 |
+| statistics | JSON | 是 | 统计数据（调用次数、Token消耗、成本等） |
+| createTime | DateTime | 是 | 创建时间 |
+| updateTime | DateTime | 是 | 更新时间 |
+
+**模型调用监控字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| modelId | String | 是 | 模型ID |
+| timestamp | DateTime | 是 | 统计时间 |
+| requestCount | Number | 是 | 请求次数 |
+| successCount | Number | 是 | 成功次数 |
+| failCount | Number | 是 | 失败次数 |
+| avgResponseTime | Number | 是 | 平均响应时间（毫秒） |
+| p95ResponseTime | Number | 是 | P95响应时间（毫秒） |
+| inputTokens | Number | 是 | 输入Token总数 |
+| outputTokens | Number | 是 | 输出Token总数 |
+| totalTokens | Number | 是 | Token总数 |
+| totalCost | Number | 是 | 总成本（元） |
+| activeAgents | Number | 是 | 使用该模型的活跃Agent数 |
 
 **具体需求：**
-- 模型上传：支持多种格式模型文件上传（PyTorch、TensorFlow、ONNX等）
-- 模型配置：模型参数配置、推理设置、资源分配
-- 模型版本管理：支持模型版本控制和历史记录
-- 模型部署：一键部署模型到指定环境
-- 模型监控：监控模型性能、资源使用情况、推理延迟
-- 模型测试：提供模型测试接口和性能基准测试
-- 模型安全：模型访问权限控制、安全扫描、敏感数据过滤
-- 模型仓库：集中存储和管理所有模型资产
-- 模型优化：自动模型压缩、量化、蒸馏等功能
-- 模型共享：支持团队间模型共享和协作
-- 模型可见性：仅对具有相应权限的Agent可用
-- 模型关联：支持与特定Agent的关联配置
+- 模型新增：支持添加各类 LLM 模型（如 DeepSeek、OpenAI GPT 系列、Anthropic Claude、通义千问、百度文心等），填写模型名称、提供商、API 类型
+- 连接配置：配置模型的 API Key、Base URL（支持自定义端点）、超时时间、重试策略
+- 参数设置：配置最大 Token 数、温度范围、Top-P、Top-K、频率惩罚等推理参数的默认值和可调范围
+- 能力标签：标记模型支持的能力类型（对话/补全、函数调用/工具调用、多模态输入、JSON 输出、Structured Output 等）
+- 启用/禁用：控制模型是否对平台可用，禁用后已绑定该模型的 Agent 将收到提示
+- 模型删除：删除不再使用的模型配置，删除前需检查是否有关联的 Agent
+- 修改配置：更新 API 连接信息、调整参数范围、修改能力标签
+- 模型测试：提供模型连通性测试功能，验证 API Key 和连接配置是否正确
+- 模型分组/分类：按提供商或用途对模型进行分类管理
+- 成本配置：记录模型的计费方式（按 Token 计费），配置输入/输出 Token 的单价，用于成本统计
+- 模型可见性：仅对具有相应权限的 Agent 可用
+- 模型关联：支持与特定 Agent 的关联配置
+- 配额管理：可设置模型的使用配额限制（如每日最大 Token 数、最大请求数）
+- 速率限制：可配置模型的调用频率限制（QPS/TPM 限制）
 
 **验收标准：**
-- 支持至少5种主流模型格式
-- 模型部署时间小于5分钟
-- 模型访问权限控制精确到用户级别
-- 模型性能监控延迟低于1秒
-- Agent只能使用已授权的模型
+- 支持至少 10 种主流 LLM 模型的配置管理
+- 模型连通性测试响应时间小于 5 秒
+- 模型启用/禁用状态变更对 Agent 的影响时间小于 10 秒
+- Agent 只能使用平台内已注册且启用的模型
+- API Key 等敏感信息必须加密存储
+- 删除已关联 Agent 的模型时必须有明确的拦截提示
 
 ### 4.2 前端功能需求
 
@@ -304,11 +1001,16 @@ GAgentManager - 企业级Agent管理平台
    - 模型选择和配置
 
 4. 模型管理界面
-   - 模型列表和详情
-   - 模型上传和部署
-   - 模型版本管理
-   - 模型性能监控
-   - 模型测试功能
+   - 模型列表（名称、提供商、状态、能力标签）
+   - 新增/编辑/删除模型
+   - 启用/禁用模型（切换开关）
+   - 模型连接配置（API Key、Base URL、超时设置）
+   - 参数配置（最大 Token、温度范围、Top-P 等）
+   - 能力标签管理（对话、函数调用、多模态等）
+   - 成本配置（输入/输出 Token 单价）
+   - 连通性测试按钮
+   - 配额和速率限制设置
+   - 搜索和筛选功能（按提供商、状态、能力标签）
 
 5. Skill商店管理
    - Skill市场浏览
@@ -323,6 +1025,40 @@ GAgentManager - 企业级Agent管理平台
 7. 配置管理界面
    - 系统参数设置
    - 用户偏好设置
+
+**系统配置字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| configKey | String | 是 | 配置键，唯一标识 |
+| configValue | String/JSON | 是 | 配置值 |
+| configType | Enum | 是 | 配置类型：字符串、数字、布尔值、JSON |
+| description | Text | 否 | 配置说明 |
+| isPublic | Boolean | 是 | 是否公开配置（前端可读取） |
+| isModifiable | Boolean | 是 | 是否允许运行时修改 |
+| updateTime | DateTime | 是 | 最后更新时间 |
+| updater | String | 是 | 最后修改人 |
+
+**系统参数配置项：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| maxAgentsPerUser | Number | 是 | 每个用户最大Agent数量，默认50 |
+| maxConcurrentAgents | Number | 是 | 系统最大并发Agent数，默认1000 |
+| defaultModel | String | 是 | 默认模型ID |
+| maxUploadFileSize | Number | 是 | 最大上传文件大小（MB），默认50 |
+| sessionTimeout | Number | 是 | 会话超时时间（分钟），默认60 |
+| passwordMinLength | Number | 是 | 密码最小长度，默认8 |
+| passwordRequireUpper | Boolean | 是 | 密码是否要求大写，默认true |
+| passwordRequireLower | Boolean | 是 | 密码是否要求小写，默认true |
+| passwordRequireNumber | Boolean | 是 | 密码是否要求数字，默认true |
+| passwordRequireSpecial | Boolean | 是 | 密码是否要求特殊字符，默认true |
+| passwordExpireDays | Number | 是 | 密码过期天数，0表示不过期，默认90 |
+| maxLoginFailures | Number | 是 | 最大登录失败次数，默认5 |
+| lockDuration | Number | 是 | 账号锁定时长（分钟），默认30 |
+| enableMfa | Boolean | 是 | 是否强制MFA，默认false |
+| enableSso | Boolean | 是 | 是否启用SSO，默认false |
+| dataRetentionDays | Number | 是 | 数据保留天数（日志等），默认365 |
 
 9. 用户管理界面
    - 用户列表管理
@@ -344,10 +1080,76 @@ GAgentManager - 企业级Agent管理平台
     - 历史数据报表
     - 自定义图表
 
+**监控图表配置字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| chartId | String | 是 | 图表唯一标识 |
+| chartName | String | 是 | 图表名称，2-50字符 |
+| chartType | Enum | 是 | 图表类型：折线图、柱状图、饼图、面积图、仪表盘、热力图 |
+| metrics | Array | 是 | 关联指标列表（指标ID+聚合方式） |
+| timeRange | Enum | 是 | 时间范围：最近1小时、6小时、24小时、7天、30天 |
+| refreshInterval | Number | 是 | 刷新间隔（秒），最小30秒 |
+| dimensions | Array | 否 | 维度字段列表（用于分组展示） |
+| threshold | JSON | 否 | 阈值线配置（警告线、严重线） |
+| sortOrder | Number | 是 | 显示排序 |
+
+**历史报表字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| reportId | String | 是 | 报表唯一标识 |
+| reportName | String | 是 | 报表名称 |
+| reportType | Enum | 是 | 报表类型：Agent性能、模型调用、Skill使用、系统资源 |
+| timeRange | JSON | 是 | 时间范围（开始时间、结束时间） |
+| metrics | Array | 是 | 包含的指标列表 |
+| format | Enum | 是 | 导出格式：PDF、Excel、CSV |
+| schedule | Enum | 否 | 生成周期：单次、每日、每周、每月 |
+| recipients | Array | 否 | 报表接收人列表 |
+| status | Enum | 是 | 状态：生成中、已完成、生成失败 |
+| fileUrl | String | 否 | 报表文件下载链接 |
+| createTime | DateTime | 是 | 创建时间 |
+| generateTime | DateTime | 否 | 生成完成时间 |
+
 12. 告警管理界面
     - 告警规则设置
     - 告警历史
     - 通知方式配置
+
+**管理端通用组件字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| 搜索关键词 | String | 否 | 全局搜索输入，支持模糊匹配 |
+| 筛选条件 | JSON | 否 | 动态筛选配置（状态、类型、时间范围等） |
+| 排序字段 | String | 否 | 排序依据字段 |
+| 排序方式 | Enum | 是 | 排序方式：升序、降序 |
+| 分页页码 | Number | 是 | 当前页码，从1开始，默认1 |
+| 每页条数 | Number | 是 | 每页显示条数，可选10/20/50/100，默认20 |
+| 选中项列表 | Array | 否 | 批量操作选中的数据ID列表 |
+| 操作日志 | Array | 是 | 页面操作日志记录 |
+
+**全局搜索字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| keyword | String | 是 | 搜索关键词，1-100字符 |
+| searchScope | Array | 是 | 搜索范围：Agent、Skill、MCP、模型、工作流、用户 |
+| results | Array | 是 | 搜索结果列表（包含类型、名称、ID、跳转链接） |
+| recentSearches | Array | 是 | 最近搜索记录，最多10条 |
+| hotSearches | Array | 是 | 热门搜索词列表 |
+
+**批量操作字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| operationType | Enum | 是 | 操作类型：启用、停用、删除、导出、分配权限 |
+| selectedIds | Array | 是 | 选中项ID列表 |
+| confirmAction | Boolean | 是 | 是否已确认操作 |
+| operationResult | Enum | 是 | 操作结果：成功、部分成功、失败 |
+| successCount | Number | 是 | 成功数量 |
+| failCount | Number | 是 | 失败数量 |
+| failDetails | Array | 否 | 失败项详情列表 |
 
 #### 4.2.2 用户端界面
 **目标用户：** 普通用户、业务用户
@@ -367,10 +1169,24 @@ GAgentManager - 企业级Agent管理平台
    - 可用Skill列表
    - Skill配置和调用
 
-5. 模型使用界面
-   - 可用模型列表
-   - 模型调用接口
-   - 模型推理结果
+**用户端 Skill 使用字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| skillId | String | 是 | Skill ID |
+| skillName | String | 是 | Skill名称 |
+| skillDescription | Text | 是 | Skill功能说明 |
+| skillVersion | String | 是 | Skill版本 |
+| configFields | JSON | 否 | Skill可配置字段定义（供用户填写） |
+| userConfig | JSON | 否 | 用户填写的配置值 |
+| lastUsedTime | DateTime | 否 | 最近使用时间 |
+| useCount | Number | 是 | 用户使用次数 |
+| isAvailable | Boolean | 是 | 当前是否可用 |
+
+5. 模型信息查看
+   - 当前 Agent 使用的模型展示
+   - 可用模型列表（由管理员配置的已启用模型）
+   - 模型基本信息和能力说明（只读，不可修改配置）
 
 5. 个人中心
    - 个人信息管理
@@ -387,10 +1203,133 @@ GAgentManager - 企业级Agent管理平台
    - 通知设置
    - 数据导出
 
+**用户通知设置字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| userId | String | 是 | 用户ID |
+| emailNotify | Boolean | 是 | 邮件通知开关，默认开启 |
+| smsNotify | Boolean | 是 | 短信通知开关，默认关闭 |
+| inAppNotify | Boolean | 是 | 站内通知开关，默认开启 |
+| agentStatusChange | Boolean | 是 | Agent状态变更通知，默认开启 |
+| alertNotify | Boolean | 是 | 告警通知，默认开启 |
+| systemUpdate | Boolean | 是 | 系统更新通知，默认开启 |
+| taskReminder | Boolean | 是 | 任务提醒，默认开启 |
+| quietHoursStart | String | 否 | 免打扰开始时间（HH:mm），如22:00 |
+| quietHoursEnd | String | 否 | 免打扰结束时间（HH:mm），如08:00 |
+| notifyFrequency | Enum | 是 | 通知频率：实时、每小时汇总、每天汇总 |
+
+**数据导出字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| exportId | String | 是 | 导出任务唯一标识 |
+| exportType | Enum | 是 | 导出类型：交互历史、调用记录、使用统计 |
+| timeRange | JSON | 是 | 时间范围（开始时间、结束时间） |
+| format | Enum | 是 | 导出格式：CSV、Excel、JSON |
+| status | Enum | 是 | 状态：处理中、已完成、失败 |
+| fileUrl | String | 否 | 下载链接（完成后生成） |
+| expireTime | DateTime | 否 | 下载链接过期时间 |
+| createTime | DateTime | 是 | 创建时间 |
+| completeTime | DateTime | 否 | 完成时间 |
+
 8. 帮助文档
     - 使用指南
     - FAQ
     - 联系支持
+
+**用户端界面 - 登录页字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| username | String | 是 | 用户名/邮箱，3-50字符 |
+| password | String | 是 | 密码，8-32字符，输入时掩码显示 |
+| rememberMe | Boolean | 否 | 记住登录状态，默认关闭 |
+| mfaCode | String | 否 | 双因素验证码6位数字（开启MFA时必填） |
+| loginMethod | Enum | 是 | 登录方式：账号密码、SSO、手机号验证码 |
+| phone | String | 否 | 手机号（选择手机号登录时必填） |
+| smsCode | String | 否 | 短信验证码（选择手机号登录时必填） |
+| captcha | String | 否 | 图形验证码（登录失败3次后显示） |
+| loginResult | Enum | 是 | 登录结果：成功、失败-用户名错误、失败-密码错误、失败-账号锁定、失败-验证码错误 |
+| lockRemainingTime | Number | 否 | 账号锁定剩余时间（分钟） |
+| ssoProviders | Array | 否 | 可用的SSO提供商列表 |
+
+**用户端界面 - Agent聊天页字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| agentId | String | 是 | 当前对话Agent ID |
+| agentName | String | 是 | Agent名称，只读展示 |
+| sessionId | String | 是 | 会话ID，新建会话时系统生成 |
+| messages | Array | 是 | 消息列表（角色、内容、时间、附件） |
+| inputContent | String | 否 | 用户输入内容，最大5000字符 |
+| attachments | Array | 否 | 附件列表（文件类型、URL、大小） |
+| modelUsed | String | 是 | 当前使用模型名称 |
+| temperature | Number | 否 | 温度参数（若Agent允许用户调整） |
+| maxTokens | Number | 否 | 最大Token数（若允许调整） |
+| streamEnabled | Boolean | 否 | 是否流式输出，默认true |
+| availableSkills | Array | 是 | 当前Agent可用的Skill列表 |
+| usedSkills | Array | 否 | 本次对话已使用的Skill |
+| isStreaming | Boolean | 是 | 是否正在流式响应中 |
+| isLoading | Boolean | 是 | 是否正在加载 |
+| errorMessage | String | 否 | 错误信息（请求失败时展示） |
+
+**用户端界面 - 个人中心字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| userId | String | 是 | 用户唯一标识 |
+| username | String | 是 | 用户名，只读 |
+| realName | String | 是 | 真实姓名，2-50字符 |
+| email | String | 是 | 邮箱地址 |
+| phone | String | 否 | 手机号 |
+| avatar | File | 否 | 头像，支持PNG/JPG，最大1MB |
+| department | String | 否 | 所属部门 |
+| role | Enum | 是 | 角色，只读 |
+| language | Enum | 是 | 界面语言：简体中文、繁体中文、English |
+| theme | Enum | 是 | 界面主题：浅色、深色、跟随系统 |
+| timezone | String | 是 | 时区设置，如Asia/Shanghai |
+| newPassword | String | 否 | 新密码（修改密码时必填） |
+| oldPassword | String | 否 | 旧密码（修改密码时必填） |
+| mfaEnabled | Boolean | 是 | 是否启用双因素认证 |
+| mfaSecret | String | 否 | MFA密钥（开启时展示二维码） |
+| emailNotifications | Boolean | 否 | 是否接收邮件通知，默认开启 |
+| systemNotifications | Boolean | 否 | 是否接收系统通知，默认开启 |
+| lastPasswordChange | DateTime | 是 | 最近密码修改时间 |
+
+**用户端界面 - 交互历史字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| historyId | String | 是 | 历史记录唯一标识 |
+| sessionId | String | 是 | 会话ID |
+| agentId | String | 是 | Agent ID |
+| agentName | String | 是 | Agent名称 |
+| title | String | 是 | 会话标题，自动生成或用户自定义 |
+| messageCount | Number | 是 | 消息轮次数 |
+| modelUsed | String | 是 | 使用的模型 |
+| tokenUsage | Number | 是 | Token消耗总量 |
+| cost | Number | 是 | 调用成本（元） |
+| skillsUsed | Array | 否 | 使用的Skill列表 |
+| duration | Number | 是 | 会话时长（秒） |
+| status | Enum | 是 | 状态：进行中、已完成、异常终止 |
+| startTime | DateTime | 是 | 会话开始时间 |
+| endTime | DateTime | 否 | 会话结束时间 |
+| createTime | DateTime | 是 | 创建时间 |
+
+**用户端界面 - 可用模型列表字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| modelId | String | 是 | 模型ID |
+| modelName | String | 是 | 模型名称 |
+| provider | Enum | 是 | 提供商 |
+| capabilities | Array | 是 | 能力标签 |
+| inputTypes | Array | 是 | 支持的输入类型 |
+| outputTypes | Array | 是 | 支持的输出类型 |
+| description | Text | 否 | 模型描述 |
+| isAvailable | Boolean | 是 | 当前是否可用 |
+| costInfo | String | 否 | 成本信息展示（元/百万Token） |
 
 ## 5. 技术架构
 
@@ -428,9 +1367,7 @@ GAgentManager - 企业级Agent管理平台
 - **Skill表：** Skill元数据、版本信息
 - **工作流表：** 工作流定义、执行记录
 - **MCP配置表：** MCP服务配置信息
-- **模型表：** 模型元数据、版本、配置信息
-- **模型实例表：** 模型部署实例、运行状态
-- **模型性能表：** 模型性能指标、使用统计
+- **模型表：** 模型基本信息（名称、提供商、API类型、API Key、Base URL、参数配置、能力标签、状态、成本配置、配额限制等）
 - **Agent资源关联表：** Agent与模型、Skill、MCP、工作流的关联关系
 - **日志表：** 用户操作日志、系统日志
 
@@ -528,7 +1465,7 @@ GAgentManager - 企业级Agent管理平台
    - 从Skill商店中选择已安装Skill（Skill配置）
    - 从MCP管理中选择已配置MCP服务（MCP配置）
    - 选择可用的工作流作为Agent工具（工作流管理）
-   - 部署Agent
+   - 发布Agent
 
 8. **配置Agent参数**
    - 选择需要配置的Agent
@@ -587,14 +1524,14 @@ GAgentManager - 企业级Agent管理平台
 - 用户管理系统
 - 基础监控面板
 - 首页仪表盘
-- 模型上传和部署基础功能
+- 模型管理基础功能（模型注册、配置、启用/禁用）
 - 资源关联功能
 
 #### Phase 3: 增强功能 (Week 13-20)
 - Skill商店开发
 - MCP高级管理功能
 - 工作流引擎开发
-- 模型高级管理功能（版本控制、性能监控、优化等）
+- 模型管理增强功能（连通性测试、成本统计、配额管理、速率限制）
 - 用户管理增强功能（批量操作、分组管理等）
 - Agent资源关联增强功能
 - Agent工作流集成增强功能
@@ -715,7 +1652,7 @@ GAgentManager - 企业级Agent管理平台
 - 用户管理效率提升：用户权限分配时间从小时级缩短到分钟级
 - 系统稳定运行时间：99.9%可用性
 - 用户满意度评分：85%以上
-- Agent部署时间：从小时级缩短到分钟级
+- Agent发布时间：从小时级缩短到分钟级
 - 模型部署时间：从小时级缩短到分钟级
 - 技能安装成功率：99%以上
 - 工作流执行成功率：98%以上
@@ -741,8 +1678,8 @@ GAgentManager - 企业级Agent管理平台
 - **MCP：** Model Context Protocol，模型上下文协议
 - **Skill：** 功能模块或插件，用于扩展Agent功能
 - **工作流：** 业务流程自动化系统，由多个节点组成
-- **模型：** AI模型，用于机器学习和深度学习任务
-- **模型管理：** 对AI模型的全生命周期管理，包括训练、部署、监控等
+- **模型：** 大语言模型（LLM），如 DeepSeek、GPT-4o、Claude、通义千问等，通过 API 调用的 AI 模型
+- **模型管理：** 对平台接入的 LLM 模型进行管理，包括注册、API 配置、参数设置、启用/禁用、测试等
 - **资源关联：** Agent与平台内资源（模型、Skill、MCP、工作流）的绑定关系
 - **用户管理：** 平台用户的注册、权限分配、状态管理等功能
 - **API：** Application Programming Interface，应用程序编程接口
@@ -767,7 +1704,8 @@ GAgentManager - 企业级Agent管理平台
 
 ---
 
-**文档版本：** 5.1  
+**文档版本：** 5.4  
 **最后更新：** 2026年04月28日  
 **作者：** GAgentManager 产品团队  
+**更新说明：** Agent部署统一改为发布；增强Agent版本控制概念（语义化版本号、版本状态、版本对比、灰度测试、配置快照、回滚追踪）  
 **审核人：** 产品负责人、技术负责人、业务负责人
