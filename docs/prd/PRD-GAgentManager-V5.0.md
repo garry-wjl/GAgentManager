@@ -1165,123 +1165,123 @@ GAgentManager - 企业级Agent管理平台
 **目标用户：** 普通用户、业务用户
 **主要功能：**
 
-1. 个性化首页
-   - 个人仪表盘
-   - 常用Agent快捷入口
-   - 通知提醒
-
-2. Agent交互界面
-   - 聊天界面
-   - 参数配置
-   - 结果展示
-
-3. Skill使用界面
-   - 可用Skill列表
-   - Skill配置和调用
-
-**用户端 Skill 使用字段设计：**
-
-| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
-|--------|----------|----------|-----------|
-| skillId | String | 是 | Skill ID |
-| skillName | String | 是 | Skill名称 |
-| skillDescription | Text | 是 | Skill功能说明 |
-| skillVersion | String | 是 | Skill版本 |
-| configFields | JSON | 否 | Skill可配置字段定义（供用户填写） |
-| userConfig | JSON | 否 | 用户填写的配置值 |
-| lastUsedTime | DateTime | 否 | 最近使用时间 |
-| useCount | Number | 是 | 用户使用次数 |
-| isAvailable | Boolean | 是 | 当前是否可用 |
-
-5. 模型信息查看
-   - 当前 Agent 使用的模型展示
-   - 可用模型列表（由管理员配置的已启用模型）
-   - 模型基本信息和能力说明（只读，不可修改配置）
-
-5. 个人中心
-   - 个人信息管理
-   - 安全设置
-   - 使用历史
-
-6. 历史记录查看
-   - Agent交互历史
-   - 模型调用历史
-   - Skill使用记录
-
-7. 设置选项
-   - 界面偏好
-   - 通知设置
-   - 数据导出
-
-**用户通知设置字段设计：**
-
-| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
-|--------|----------|----------|-----------|
-| userId | String | 是 | 用户ID |
-| emailNotify | Boolean | 是 | 邮件通知开关，默认开启 |
-| smsNotify | Boolean | 是 | 短信通知开关，默认关闭 |
-| inAppNotify | Boolean | 是 | 站内通知开关，默认开启 |
-| agentStatusChange | Boolean | 是 | Agent状态变更通知，默认开启 |
-| systemUpdate | Boolean | 是 | 系统更新通知，默认开启 |
-| taskReminder | Boolean | 是 | 任务提醒，默认开启 |
-| quietHoursStart | String | 否 | 免打扰开始时间（HH:mm），如22:00 |
-| quietHoursEnd | String | 否 | 免打扰结束时间（HH:mm），如08:00 |
-| notifyFrequency | Enum | 是 | 通知频率：实时、每小时汇总、每天汇总 |
-
-**数据导出字段设计：**
-
-| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
-|--------|----------|----------|-----------|
-| exportId | String | 是 | 导出任务唯一标识 |
-| exportType | Enum | 是 | 导出类型：交互历史、调用记录、使用统计 |
-| timeRange | JSON | 是 | 时间范围（开始时间、结束时间） |
-| format | Enum | 是 | 导出格式：CSV、Excel、JSON |
-| status | Enum | 是 | 状态：处理中、已完成、失败 |
-| fileUrl | String | 否 | 下载链接（完成后生成） |
-| expireTime | DateTime | 否 | 下载链接过期时间 |
-| createTime | DateTime | 是 | 创建时间 |
-| completeTime | DateTime | 否 | 完成时间 |
-
-8. 帮助文档
-    - 使用指南
-    - FAQ
-    - 联系支持
+1. 用户登录（手机号/邮箱 + 密码）
+2. 找回密码（邮箱 + 验证码）
+3. Agent对话（左侧会话管理 + 多轮历史记录）
+4. 个人中心
+5. 消息支持思维链、Markdown 格式、附件/网页卡片展示与预览
 
 **用户端界面 - 登录页字段设计：**
 
 | 字段名 | 字段类型 | 是否必填 | 说明/约束 |
 |--------|----------|----------|-----------|
-| username | String | 是 | 用户名/邮箱，3-50字符 |
+| loginAccount | String | 是 | 登录账号，支持手机号（11位）或邮箱地址 |
 | password | String | 是 | 密码，8-32字符，输入时掩码显示 |
 | rememberMe | Boolean | 否 | 记住登录状态，默认关闭 |
-| mfaCode | String | 否 | 双因素验证码6位数字（开启MFA时必填） |
-| loginMethod | Enum | 是 | 登录方式：账号密码、SSO、手机号验证码 |
-| phone | String | 否 | 手机号（选择手机号登录时必填） |
-| smsCode | String | 否 | 短信验证码（选择手机号登录时必填） |
-| captcha | String | 否 | 图形验证码（登录失败3次后显示） |
-| loginResult | Enum | 是 | 登录结果：成功、失败-用户名错误、失败-密码错误、失败-账号锁定、失败-验证码错误 |
+| captcha | String | 否 | 图形验证码（登录失败3次后出现） |
+| loginResult | Enum | 是 | 登录结果：成功、失败-账号不存在、失败-密码错误、失败-账号已禁用、失败-账号已锁定 |
 | lockRemainingTime | Number | 否 | 账号锁定剩余时间（分钟） |
-| ssoProviders | Array | 否 | 可用的SSO提供商列表 |
+| findPasswordLink | String | 否 | 找回密码入口链接 |
 
-**用户端界面 - Agent聊天页字段设计：**
+**用户端界面 - 找回密码页字段设计：**
 
 | 字段名 | 字段类型 | 是否必填 | 说明/约束 |
 |--------|----------|----------|-----------|
-| agentId | String | 是 | 当前对话Agent ID |
-| agentName | String | 是 | Agent名称，只读展示 |
-| sessionId | String | 是 | 会话ID，新建会话时系统生成 |
-| messages | Array | 是 | 消息列表（角色、内容、时间、附件） |
-| inputContent | String | 否 | 用户输入内容，最大5000字符 |
-| attachments | Array | 否 | 附件列表（文件类型、URL、大小） |
-| modelUsed | String | 是 | 当前使用模型名称 |
-| temperature | Number | 否 | 温度参数（若Agent允许用户调整） |
-| maxTokens | Number | 否 | 最大Token数（若允许调整） |
-| streamEnabled | Boolean | 否 | 是否流式输出，默认true |
-| availableSkills | Array | 是 | 当前Agent可用的Skill列表 |
-| usedSkills | Array | 否 | 本次对话已使用的Skill |
-| isStreaming | Boolean | 是 | 是否正在流式响应中 |
-| isLoading | Boolean | 是 | 是否正在加载 |
-| errorMessage | String | 否 | 错误信息（请求失败时展示） |
+| email | String | 是 | 注册邮箱地址 |
+| verifyCode | String | 是 | 邮箱验证码，6位数字/字母 |
+| codeExpireTime | Number | 是 | 验证码有效期（秒），默认300 |
+| resendCooldown | Number | 是 | 重新发送冷却时间（秒），默认60 |
+| newPassword | String | 是 | 新密码，8-32字符，需包含大小写字母+数字+特殊字符 |
+| confirmNewPassword | String | 是 | 确认新密码，必须与新密码一致 |
+| resetResult | Enum | 是 | 重置结果：成功、失败-邮箱未注册、失败-验证码错误、失败-验证码过期、失败-密码不符合要求 |
+
+**用户端界面 - Agent对话主页面布局：**
+
+页面分为左侧会话面板和右侧对话区域。
+
+**左侧会话面板字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| agentId | String | 是 | 当前选中的Agent ID |
+| agentName | String | 是 | Agent名称 |
+| sessions | Array | 是 | 该用户的会话列表 |
+| sessionId | String | 是 | 会话唯一标识，UUID |
+| sessionTitle | String | 是 | 会话标题，首次对话时根据用户输入自动生成，支持手动修改 |
+| lastMessagePreview | String | 否 | 最后一条消息预览，最大50字符 |
+| lastMessageTime | DateTime | 是 | 最后一条消息时间 |
+| messageCount | Number | 是 | 会话内消息总数 |
+| isActive | Boolean | 是 | 是否为当前选中的活跃会话 |
+| createTime | DateTime | 是 | 会话创建时间 |
+
+**左侧会话面板操作：**
+- **新建会话**：点击按钮创建新会话，自动清空右侧对话区
+- **切换会话**：点击左侧会话项，加载该会话的完整历史记录
+- **重命名会话**：双击会话标题或右键菜单修改标题
+- **删除会话**：右键菜单或悬停删除按钮，需二次确认
+- **搜索会话**：顶部搜索框，按标题模糊匹配
+
+**右侧对话区域 - 消息列表字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| messageId | String | 是 | 消息唯一标识，系统自动生成 |
+| sessionId | String | 是 | 所属会话ID |
+| role | Enum | 是 | 消息角色：user（用户）、assistant（Agent）、system（系统） |
+| content | Text | 是 | 消息正文内容，支持Markdown格式 |
+| thinkingChain | Text | 否 | Agent思维链内容，仅assistant角色有值，可折叠展示 |
+| attachments | Array | 否 | 附件列表，包含文件URL、文件名、文件大小、文件类型 |
+| webPreviews | Array | 否 | 网页预览列表，包含URL、标题、摘要、缩略图 |
+| usedSkills | Array | 否 | Agent此次回复使用的Skill列表 |
+| usedModel | String | 否 | Agent此次回复使用的模型 |
+| tokenUsage | Number | 否 | Token消耗量（输入+输出） |
+| createTime | DateTime | 是 | 消息创建时间 |
+| isStreaming | Boolean | 是 | 是否正在流式输出中 |
+| isError | Boolean | 是 | 是否为错误消息 |
+
+**右侧对话区域 - 输入框字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| inputContent | String | 否 | 用户输入内容，支持Markdown语法，最大10000字符 |
+| attachments | Array | 否 | 待发送附件列表，支持拖拽上传和粘贴上传 |
+| uploadProgress | Number | 否 | 附件上传进度（0-100） |
+| isSending | Boolean | 是 | 是否正在发送中 |
+| isThinking | Boolean | 是 | Agent是否正在思考（等待响应中） |
+| canStop | Boolean | 是 | 是否支持停止当前响应，默认true |
+| placeholder | String | 是 | 输入框占位提示文字 |
+
+**附件字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| fileId | String | 是 | 附件唯一标识 |
+| fileName | String | 是 | 文件名 |
+| fileSize | Number | 是 | 文件大小（字节） |
+| fileType | Enum | 是 | 文件类型：图片、文档、PDF、音频、视频、其他 |
+| mimeType | String | 是 | MIME类型 |
+| fileUrl | String | 是 | 文件访问URL |
+| thumbnailUrl | String | 否 | 缩略图URL（图片/视频类型有值） |
+| previewAvailable | Boolean | 是 | 是否支持在线预览 |
+| uploadStatus | Enum | 是 | 上传状态：上传中、已完成、失败 |
+
+**网页预览卡片字段设计：**
+
+| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
+|--------|----------|----------|-----------|
+| url | String | 是 | 网页URL |
+| title | String | 是 | 网页标题，抓取失败时使用URL作为标题 |
+| description | Text | 否 | 网页摘要，最大200字符 |
+| thumbnailUrl | String | 否 | 缩略图/OG Image URL |
+| siteName | String | 否 | 网站名称 |
+| fetchStatus | Enum | 是 | 抓取状态：成功、失败、超时 |
+
+**消息内容展示规范：**
+- 用户消息：右侧气泡展示，纯文本或基础Markdown
+- Agent消息：左侧气泡展示，完整支持Markdown渲染（代码块高亮、表格、列表、链接等）
+- 思维链：Agent消息上方可折叠区域，灰色背景展示，点击展开/收起
+- 附件卡片：消息下方独立卡片区域展示，图片显示缩略图，其他文件显示图标+文件名+大小
+- 网页预览卡片：消息下方独立卡片，展示标题+摘要+缩略图，点击跳转原链接或内嵌预览
 
 **用户端界面 - 个人中心字段设计：**
 
@@ -1289,22 +1289,21 @@ GAgentManager - 企业级Agent管理平台
 |--------|----------|----------|-----------|
 | userId | String | 是 | 用户唯一标识 |
 | username | String | 是 | 用户名，只读 |
-| realName | String | 是 | 真实姓名，2-50字符 |
-| email | String | 是 | 邮箱地址 |
-| phone | String | 否 | 手机号 |
-| avatar | File | 否 | 头像，支持PNG/JPG，最大1MB |
-| department | String | 否 | 所属部门 |
-| role | Enum | 是 | 角色，只读 |
+| realName | String | 是 | 真实姓名，2-50字符，可编辑 |
+| email | String | 是 | 邮箱地址，可编辑，需唯一 |
+| phone | String | 否 | 手机号，可编辑，格式校验 |
+| avatar | File | 否 | 头像上传，支持PNG/JPG，最大1MB |
+| department | String | 否 | 所属部门，只读（由管理员分配） |
+| roleNames | Array | 是 | 角色列表，只读（通过权限管理模块分配） |
+| source | Enum | 是 | 账号来源，只读 |
+| oldPassword | String | 否 | 旧密码（修改密码时必填） |
+| newPassword | String | 否 | 新密码（修改密码时必填），8-32字符 |
+| confirmNewPassword | String | 否 | 确认新密码 |
+| mfaEnabled | Boolean | 是 | 是否启用双因素认证，可切换开启/关闭 |
 | language | Enum | 是 | 界面语言：简体中文、繁体中文、English |
 | theme | Enum | 是 | 界面主题：浅色、深色、跟随系统 |
-| timezone | String | 是 | 时区设置，如Asia/Shanghai |
-| newPassword | String | 否 | 新密码（修改密码时必填） |
-| oldPassword | String | 否 | 旧密码（修改密码时必填） |
-| mfaEnabled | Boolean | 是 | 是否启用双因素认证 |
-| mfaSecret | String | 否 | MFA密钥（开启时展示二维码） |
-| emailNotifications | Boolean | 否 | 是否接收邮件通知，默认开启 |
-| systemNotifications | Boolean | 否 | 是否接收系统通知，默认开启 |
-| lastPasswordChange | DateTime | 是 | 最近密码修改时间 |
+| lastPasswordChange | DateTime | 是 | 最近密码修改时间，只读 |
+| createTime | DateTime | 是 | 账号创建时间，只读 |
 
 **用户端界面 - 交互历史字段设计：**
 
@@ -1431,11 +1430,34 @@ GAgentManager - 企业级Agent管理平台
 - 遵循Material Design和Ant Design规范
 
 ### 7.2 用户流程
-1. **新用户注册/登录**
-   - 访问平台主页
-   - 选择注册或登录方式
-   - 完成身份验证
-   - 完善个人信息（首次登录）
+1. **用户登录**
+   - 访问平台登录页
+   - 输入手机号或邮箱 + 密码
+   - 完成登录，跳转到Agent对话页面
+   - 忘记密码可通过"找回密码"入口，输入邮箱 + 验证码重置密码
+
+2. **Agent对话**
+   - 登录/刷新后进入Agent对话页面
+   - 左侧显示会话列表，可选择已有会话或新建会话
+   - 右侧展示当前会话的完整消息历史
+   - 发送消息后，Agent流式返回响应，支持思维链展示
+   - 消息内容支持Markdown格式渲染（代码块高亮、表格、列表等）
+   - 消息中的附件以卡片形式展示，支持预览
+   - 消息中的网页链接以预览卡片形式展示标题、摘要、缩略图
+   - 点击左侧切换不同会话，加载对应历史记录
+
+3. **个人中心**
+   - 点击头像进入个人中心
+   - 查看和编辑个人信息（姓名、邮箱、手机号、头像）
+   - 修改密码（需验证旧密码）
+   - 开启/关闭双因素认证
+   - 设置界面偏好（语言、主题）
+
+4. **找回密码**
+   - 点击登录页"忘记密码"入口
+   - 输入注册邮箱
+   - 系统发送验证码到邮箱
+   - 输入验证码和新密码完成重置
 
 2. **访问个性化首页**
    - 登录后跳转到个性化首页
