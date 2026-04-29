@@ -1,0 +1,258 @@
+/* 火山引擎风格登录页 - 左右分屏布局 */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  background: #f7f8fa;
+}
+
+/* ===== 左侧品牌区域 ===== */
+.login-banner {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #533483 100%);
+}
+
+.login-banner-content {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-banner-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(ellipse at 20% 80%, rgba(83, 52, 131, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(15, 52, 96, 0.6) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(22, 33, 62, 0.8) 0%, transparent 70%);
+}
+
+.login-banner-inner {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 60px 80px;
+  max-width: 720px;
+}
+
+.login-banner-logo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 64px;
+}
+
+.login-banner-logo svg {
+  flex-shrink: 0;
+}
+
+.login-banner-title {
+  font-size: 24px;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.login-banner-text h2 {
+  font-size: 36px !important;
+  line-height: 1.4 !important;
+  margin-bottom: 24px !important;
+}
+
+.login-banner-text p {
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+/* 装饰元素 */
+.login-banner-deco {
+  position: absolute;
+  right: -40px;
+  bottom: -40px;
+  pointer-events: none;
+}
+
+.deco-circle {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.deco-1 {
+  width: 300px;
+  height: 300px;
+  bottom: 0;
+  right: 0;
+}
+
+.deco-2 {
+  width: 200px;
+  height: 200px;
+  bottom: 40px;
+  right: 40px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.deco-3 {
+  width: 100px;
+  height: 100px;
+  bottom: 80px;
+  right: 80px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.deco-ring {
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.06);
+  bottom: 20px;
+  right: 20px;
+}
+
+.deco-dots {
+  position: absolute;
+  top: 40px;
+  right: 100px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.deco-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* ===== 右侧登录表单 ===== */
+.login-form-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: #fff;
+  max-width: 480px;
+  min-width: 420px;
+}
+
+.login-form-container {
+  width: 100%;
+  max-width: 360px;
+}
+
+.login-form-header {
+  margin-bottom: 32px;
+}
+
+.login-form-header h3 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1d2129;
+  margin-bottom: 8px !important;
+}
+
+/* 表单样式优化 */
+.login-form-container .ant-form-item {
+  margin-bottom: 20px;
+}
+
+.login-input {
+  height: 44px;
+  border-radius: 8px;
+  border: 1px solid #e5e6eb;
+  background: #f7f8fa;
+  transition: all 0.2s;
+}
+
+.login-input:hover,
+.login-input:focus {
+  border-color: #3370ff;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(51, 112, 255, 0.1);
+}
+
+.login-input .ant-input {
+  background: transparent;
+  border: none;
+  font-size: 14px;
+}
+
+.login-input .ant-input:focus {
+  box-shadow: none;
+}
+
+.login-input .ant-input-prefix {
+  margin-right: 8px;
+  color: #bfbfbf;
+}
+
+/* 登录按钮 */
+.login-submit-btn {
+  height: 44px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  background: #3370ff;
+  border: none;
+  box-shadow: 0 2px 6px rgba(51, 112, 255, 0.3);
+  transition: all 0.2s;
+}
+
+.login-submit-btn:hover {
+  background: #2361e9;
+  box-shadow: 0 4px 12px rgba(51, 112, 255, 0.4);
+}
+
+/* 忘记密码链接 */
+.login-forgot-link {
+  color: #3370ff;
+}
+
+.login-forgot-link:hover {
+  color: #2361e9;
+}
+
+/* 页脚 */
+.login-footer {
+  text-align: center;
+  padding-top: 16px;
+  border-top: 1px solid #f2f3f5;
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 1024px) {
+  .login-banner {
+    display: none;
+  }
+
+  .login-form-wrap {
+    max-width: none;
+    min-width: auto;
+  }
+
+  .login-page {
+    justify-content: center;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #533483 100%);
+  }
+
+  .login-form-container {
+    max-width: 380px;
+    background: #fff;
+    padding: 40px 32px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  }
+}
