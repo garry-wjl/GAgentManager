@@ -1,16 +1,34 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
-  Table, Button, Space, Tag, Modal, Form, Input, Select, message,
-  Popconfirm, Drawer, Descriptions, Tabs, Typography, InputNumber,
-  Row, Col, Card,
+  Table, Button, Space, Tag, Input, Select, message,
+  Popconfirm, Typography, Row, Col,
 } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, RocketOutlined, PauseCircleOutlined, PlayCircleOutlined, HistoryOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, DeleteOutlined, RocketOutlined, PauseCircleOutlined, PlayCircleOutlined, SearchOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import type { AgentItem, AgentFormValues, AgentType, AgentStatus } from '../../types'
-import { publishAgent, deleteAgent, onlineAgent, offlineAgent, getAgents } from '../../api/agent'
+import type { AgentItem, AgentType, AgentStatus } from '../../types'
+import { publishAgent, deleteAgent, startAgent, stopAgent, getAgents } from '../../api/agent'
 
-const { TextArea } = Input
 const { Title } = Typography
+
+const AGENT_TYPE_OPTIONS = [
+  { label: '全部类型', value: '' },
+  { label: '聊天型', value: '聊天型' },
+  { label: '工作流型', value: '工作流型' },
+  { label: '分析型', value: '分析型' },
+  { label: '自动化型', value: '自动化型' },
+  { label: '混合型', value: '混合型' },
+]
+
+const STATUS_OPTIONS = [
+  { label: '全部状态', value: '' },
+  { label: '未发布', value: '未发布' },
+  { label: '已发布', value: '已发布' },
+  { label: '已上线', value: '已上线' },
+  { label: '已下线', value: '已下线' },
+  { label: '异常', value: '异常' },
+  { label: '发布中', value: '发布中' },
+]
 
 const agentTypeMap: Record<AgentType, string> = {
   '聊天型': 'blue',
@@ -29,52 +47,82 @@ const statusMap: Record<AgentStatus, string> = {
   '发布中': 'processing',
 }
 
-// Mock data
-const mockData: AgentItem[] = [
-  {
-    agentId: '1',
-    agentName: '客服助手',
-    agentType: '聊天型',
-    description: '用于处理客户咨询的智能客服Agent',
-    admins: ['admin'],
-    status: '已上线',
-    boundModel: 'gpt-4o',
-    skillCount: 3,
-    mcpCount: 1,
+/** 将后端 AgentVO 转换为前端 AgentItem */
+function toAgentItem(vo: Record<string, unknown>): AgentItem {
+  const admins = vo.admins ? (vo.admins as string[]) : []
+  return {
+    agentId: String(vo.id || ''),
+    num: String(vo.num || ''),
+    agentName: String(vo.agentName || ''),
+    agentType: (vo.agentType as AgentType) || '聊天型',
+    description: String(vo.description || ''),
+    admins,
+    status: (vo.status as AgentStatus) || '未发布',
+    boundModel: '',
+    skillCount: 0,
+    mcpCount: 0,
     workflowCount: 0,
-    version: 'V1.0.0',
-    creator: 'admin',
-    createTime: '2026-04-20 10:00:00',
-    updater: 'admin',
-    updateTime: '2026-04-25 14:30:00',
-  },
-  {
-    agentId: '2',
-    agentName: '数据分析助手',
-    agentType: '分析型',
-    description: '用于数据分析报告生成',
-    admins: ['admin', 'dev'],
-    status: '已发布',
-    boundModel: 'claude-3.5',
-    skillCount: 5,
-    mcpCount: 2,
-    workflowCount: 1,
-    version: 'V1.1.0',
-    creator: 'dev',
-    createTime: '2026-04-18 09:00:00',
-    updater: 'dev',
-    updateTime: '2026-04-26 11:20:00',
-  },
-]
+    version: String(vo.version || ''),
+    creator: String(vo.createNo || ''),
+    createTime: String(vo.createTime || ''),
+    updater: String(vo.updateNo || ''),
+    updateTime: String(vo.updateTime || ''),
+  }
+}
 
 export default function AgentManagement() {
-  const [data, setData] = useState(mockData)
+  const navigate = useNavigate()
+  const [data, setData] = useState<AgentItem[]>([])
   const [loading, setLoading] = useState(false)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [detailOpen, setDetailOpen] = useState(false)
-  const [current, setCurrent] = useState<AgentItem | null>(null)
-  const [form] = Form.useForm()
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: mockData.length })
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
+  const [filters, setFilters] = useState({ keyword: '', status: '', agentType: '' })
+
+  useEffect(() => {
+    loadData()
+  }, [pagination.current, pagination.pageSize])
+
+  const loadData = async (overrideFilters?: Record<string, string>) => {
+    setLoading(true)
+    try {
+      const activeFilters = overrideFilters ?? filters
+      const params: Record<string, unknown> = {
+        pageNo: pagination.current,
+        pageSize: pagination.pageSize,
+      }
+      if (activeFilters.keyword) params.keyword = activeFilters.keyword
+      if (activeFilters.status) params.status = activeFilters.status
+      if (activeFilters.agentType) params.agentType = activeFilters.agentType
+
+      const res = await getAgents(params)
+      const records = (res.data.data?.records as unknown as Record<string, unknown>[]) || []
+      setData(records.map(toAgentItem))
+      setPagination(p => ({ ...p, total: Number(res.data.data?.total || 0) }))
+    } catch {
+      message.error('加载Agent列表失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSearch = (value: string) => {
+    const newFilters = { ...filters, keyword: value }
+    setFilters(newFilters)
+    setPagination(p => ({ ...p, current: 1 }))
+    loadData(newFilters)
+  }
+
+  const handleFilterChange = (key: string, value: string) => {
+    const newFilters = { ...filters, [key]: value }
+    setFilters(newFilters)
+    setPagination(p => ({ ...p, current: 1 }))
+    loadData(newFilters)
+  }
+
+  const handleReset = () => {
+    setFilters({ keyword: '', status: '', agentType: '' })
+    setPagination(p => ({ ...p, current: 1 }))
+    loadData({ keyword: '', status: '', agentType: '' })
+  }
 
   const columns: ColumnsType<AgentItem> = [
     { title: 'Agent名称', dataIndex: 'agentName', key: 'agentName', width: 150 },
@@ -93,10 +141,6 @@ export default function AgentManagement() {
       width: 100,
       render: (v: AgentStatus) => <Tag color={statusMap[v]}>{v}</Tag>,
     },
-    { title: '模型', dataIndex: 'boundModel', width: 120 },
-    { title: 'Skill', dataIndex: 'skillCount', width: 70 },
-    { title: 'MCP', dataIndex: 'mcpCount', width: 70 },
-    { title: '工作流', dataIndex: 'workflowCount', width: 80 },
     { title: '版本', dataIndex: 'version', width: 90 },
     { title: '创建时间', dataIndex: 'createTime', width: 170 },
     {
@@ -106,18 +150,18 @@ export default function AgentManagement() {
       fixed: 'right' as const,
       render: (_, record) => (
         <Space>
-          <Button type="link" size="small" onClick={() => { setCurrent(record); setDetailOpen(true) }}>详情</Button>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => { setCurrent(record); form.setFieldsValue(record); setModalOpen(true) }}>编辑</Button>
+          <Button type="link" size="small" onClick={() => navigate(`/agents/${record.num}`)}>详情</Button>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => navigate(`/agents/${record.num}`)}>编辑</Button>
           {record.status === '未发布' && (
-            <Button type="link" size="small" icon={<RocketOutlined />} onClick={() => handlePublish(record.agentId)}>发布</Button>
+            <Button type="link" size="small" icon={<RocketOutlined />} onClick={() => handlePublish(record)}>发布</Button>
           )}
           {record.status === '已发布' && (
-            <Button type="link" size="small" icon={<PlayCircleOutlined />} onClick={() => handleOnline(record.agentId)}>上线</Button>
+            <Button type="link" size="small" icon={<PlayCircleOutlined />} onClick={() => handleStart(record)}>上线</Button>
           )}
           {record.status === '已上线' && (
-            <Button type="link" size="small" icon={<PauseCircleOutlined />} onClick={() => handleOffline(record.agentId)}>下线</Button>
+            <Button type="link" size="small" icon={<PauseCircleOutlined />} onClick={() => handleStop(record)}>下线</Button>
           )}
-          <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.agentId)}>
+          <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record)}>
             <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
         </Space>
@@ -125,50 +169,43 @@ export default function AgentManagement() {
     },
   ]
 
-  const handlePublish = async (id: string) => {
+  const handlePublish = async (record: AgentItem) => {
     try {
-      await publishAgent(id)
+      await publishAgent(record.num!, { version: record.version || 'V1.0.0', changeLog: '' })
       message.success('发布成功')
+      loadData()
     } catch {
       message.error('发布失败')
     }
   }
 
-  const handleOnline = async (id: string) => {
+  const handleStart = async (record: AgentItem) => {
     try {
-      await onlineAgent(id)
+      await startAgent(record.num!)
       message.success('上线成功')
+      loadData()
     } catch {
       message.error('上线失败')
     }
   }
 
-  const handleOffline = async (id: string) => {
+  const handleStop = async (record: AgentItem) => {
     try {
-      await offlineAgent(id)
+      await stopAgent(record.num!)
       message.success('下线成功')
+      loadData()
     } catch {
       message.error('下线失败')
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (record: AgentItem) => {
     try {
-      await deleteAgent(id)
+      await deleteAgent(record.num!)
       message.success('删除成功')
+      loadData()
     } catch {
       message.error('删除失败')
-    }
-  }
-
-  const handleSubmit = async (values: AgentFormValues) => {
-    try {
-      message.success(current ? '修改成功' : '创建成功')
-      setModalOpen(false)
-      form.resetFields()
-      setCurrent(null)
-    } catch {
-      message.error('操作失败')
     }
   }
 
@@ -176,10 +213,47 @@ export default function AgentManagement() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <Title level={4} style={{ margin: 0 }}>Agent管理</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => { setCurrent(null); form.resetFields(); setModalOpen(true) }}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/agents/new')}>
           新增Agent
         </Button>
       </div>
+
+      {/* 搜索/筛选栏 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col xs={24} sm={8}>
+          <Input.Search
+            placeholder="搜索 Agent 名称"
+            allowClear
+            enterButton={<SearchOutlined />}
+            value={filters.keyword}
+            onChange={(e) => setFilters(f => ({ ...f, keyword: e.target.value }))}
+            onSearch={handleSearch}
+          />
+        </Col>
+        <Col xs={12} sm={5}>
+          <Select
+            style={{ width: '100%' }}
+            placeholder="状态筛选"
+            value={filters.status || undefined}
+            onChange={(v) => handleFilterChange('status', v)}
+            options={STATUS_OPTIONS}
+            allowClear
+          />
+        </Col>
+        <Col xs={12} sm={5}>
+          <Select
+            style={{ width: '100%' }}
+            placeholder="类型筛选"
+            value={filters.agentType || undefined}
+            onChange={(v) => handleFilterChange('agentType', v)}
+            options={AGENT_TYPE_OPTIONS}
+            allowClear
+          />
+        </Col>
+        <Col xs={24} sm={6} style={{ textAlign: 'right' }}>
+          <Button onClick={handleReset}>重置</Button>
+        </Col>
+      </Row>
 
       <Table
         columns={columns}
@@ -191,95 +265,9 @@ export default function AgentManagement() {
           ...pagination,
           showSizeChanger: true,
           showTotal: (t) => `共 ${t} 条`,
-          onChange: (page, size) => setPagination({ current: page, pageSize: size, total: pagination.total }),
+          onChange: (page, size) => { setPagination({ current: page, pageSize: size, total: pagination.total }); loadData() },
         }}
       />
-
-      <Modal
-        title={current ? '编辑Agent' : '新增Agent'}
-        open={modalOpen}
-        onCancel={() => { setModalOpen(false); form.resetFields() }}
-        onOk={() => form.submit()}
-        width={720}
-        destroyOnClose
-      >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="agentName" label="Agent名称" rules={[{ required: true }]}>
-                <Input placeholder="2-50字符" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="agentType" label="Agent类型" rules={[{ required: true }]}>
-                <Select options={[
-                  { label: '聊天型', value: '聊天型' },
-                  { label: '工作流型', value: '工作流型' },
-                  { label: '分析型', value: '分析型' },
-                  { label: '自动化型', value: '自动化型' },
-                  { label: '混合型', value: '混合型' },
-                ]} />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Form.Item name="description" label="描述">
-            <TextArea rows={2} maxLength={500} showCount />
-          </Form.Item>
-          <Form.Item name="systemPrompt" label="系统提示词">
-            <TextArea rows={4} maxLength={5000} showCount />
-          </Form.Item>
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item name="temperature" label="Temperature" initialValue={1}>
-                <InputNumber min={0} max={2} step={0.1} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="maxTokens" label="Max Tokens" initialValue={4096}>
-                <InputNumber min={1} max={128000} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="topP" label="Top-P" initialValue={1}>
-                <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Form>
-      </Modal>
-
-      <Drawer
-        title="Agent详情"
-        open={detailOpen}
-        onClose={() => setDetailOpen(false)}
-        width={720}
-      >
-        {current && (
-          <>
-            <Descriptions column={2} bordered>
-              <Descriptions.Item label="Agent名称">{current.agentName}</Descriptions.Item>
-              <Descriptions.Item label="类型">{current.agentType}</Descriptions.Item>
-              <Descriptions.Item label="状态">{current.status}</Descriptions.Item>
-              <Descriptions.Item label="版本">{current.version}</Descriptions.Item>
-              <Descriptions.Item label="绑定模型">{current.boundModel}</Descriptions.Item>
-              <Descriptions.Item label="管理员">{current.admins.join(', ')}</Descriptions.Item>
-              <Descriptions.Item label="Skill数">{current.skillCount}</Descriptions.Item>
-              <Descriptions.Item label="MCP数">{current.mcpCount}</Descriptions.Item>
-              <Descriptions.Item label="创建人">{current.creator}</Descriptions.Item>
-              <Descriptions.Item label="创建时间">{current.createTime}</Descriptions.Item>
-            </Descriptions>
-            <Tabs
-              style={{ marginTop: 16 }}
-              items={[
-                { key: 'skill', label: 'Skill配置', children: <p>Skill绑定管理</p> },
-                { key: 'mcp', label: 'MCP配置', children: <p>MCP绑定管理</p> },
-                { key: 'workflow', label: '工作流管理', children: <p>工作流集成管理</p> },
-                { key: 'version', label: '版本历史', children: <p><HistoryOutlined /> 版本记录</p> },
-              ]}
-            />
-          </>
-        )}
-      </Drawer>
     </div>
   )
 }

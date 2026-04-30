@@ -1,5 +1,6 @@
 export interface MCPItem {
   mcpId: string
+  num?: string
   mcpName: string
   description?: string
   latestVersion: string

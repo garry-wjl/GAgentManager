@@ -14,6 +14,7 @@ export interface UserInfo {
 
 export interface UserListItem {
   userId: string
+  num?: string
   username: string
   realName: string
   nickname?: string

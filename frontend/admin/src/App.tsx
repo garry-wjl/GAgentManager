@@ -3,6 +3,7 @@ import MainLayout from './layouts/MainLayout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import AgentManagement from './pages/AgentManagement'
+import AgentDetail from './pages/AgentDetail'
 import UserManagement from './pages/UserManagement'
 import PermissionManagement from './pages/PermissionManagement'
 import SkillStore from './pages/SkillStore'
@@ -26,6 +27,8 @@ function App() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="agents" element={<AgentManagement />} />
+        <Route path="agents/new" element={<AgentDetail />} />
+        <Route path="agents/:num" element={<AgentDetail />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="permissions" element={<PermissionManagement />} />
         <Route path="skills" element={<SkillStore />} />

@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Table, Button, Space, Tag, Modal, Form, Input, Select, message,
   Popconfirm, Card, Row, Col, Typography, Rate, Drawer, Tabs, Badge,
 } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, RocketOutlined, DownloadOutlined, HistoryOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, DeleteOutlined, RocketOutlined, DownloadOutlined, HistoryOutlined, SearchOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { SkillItem, SkillStatus, SkillCategory } from '../../types'
+import { getSkills, createSkill, updateSkill, deleteSkill, installSkill, uninstallSkill } from '../../api/skill'
 
 const { Title, Text } = Typography
 
@@ -15,51 +16,103 @@ const statusMap: Record<SkillStatus, { text: string; color: string }> = {
   '有更新可用': { text: '有更新', color: 'orange' },
 }
 
-const mockData: SkillItem[] = [
-  {
-    skillId: '1',
-    skillName: '代码助手',
-    description: '提供代码补全、代码审查等功能',
-    category: '工具调用',
-    tags: ['代码', '开发'],
-    version: 'V2.1.0',
-    author: '官方',
-    installCount: 1200,
-    rating: 4.8,
-    ratingCount: 86,
-    status: '已安装',
-    isOfficial: true,
-    isFree: true,
-    createTime: '2026-02-10 00:00:00',
-    updater: '官方',
-    updateTime: '2026-04-20 10:00:00',
-  },
-  {
-    skillId: '2',
-    skillName: '数据分析',
-    description: '数据分析和可视化Skill',
-    category: '数据处理',
-    tags: ['数据', '可视化'],
-    version: 'V1.0.0',
-    author: '官方',
-    installCount: 560,
-    rating: 4.5,
-    ratingCount: 32,
-    status: '未安装',
-    isOfficial: true,
-    isFree: true,
-    createTime: '2026-03-15 00:00:00',
-    updater: '官方',
-    updateTime: '2026-03-15 10:00:00',
-  },
+const SKILL_CATEGORY_OPTIONS = [
+  { label: '全部分类', value: '' },
+  { label: '数据处理', value: '数据处理' },
+  { label: '工具调用', value: '工具调用' },
+  { label: '内容生成', value: '内容生成' },
+  { label: '搜索查询', value: '搜索查询' },
+  { label: '系统集成', value: '系统集成' },
+  { label: '自定义', value: '自定义' },
 ]
 
+const SKILL_STATUS_OPTIONS = [
+  { label: '全部状态', value: '' },
+  { label: '未安装', value: '未安装' },
+  { label: '已安装', value: '已安装' },
+  { label: '有更新可用', value: '有更新可用' },
+]
+
+/** 将后端 SkillVO 转换为前端 SkillItem */
+function toSkillItem(vo: Record<string, unknown>): SkillItem {
+  const tags = vo.tags ? String(vo.tags).split(',').filter(Boolean) : []
+  return {
+    skillId: String(vo.id || ''),
+    num: String(vo.num || ''),
+    skillName: String(vo.skillName || ''),
+    description: String(vo.description || ''),
+    category: (vo.category as SkillCategory) || '自定义',
+    tags,
+    version: String(vo.version || ''),
+    author: String(vo.author || ''),
+    installCount: Number(vo.installCount || 0),
+    rating: Number(vo.rating || 0),
+    ratingCount: Number(vo.ratingCount || 0),
+    status: (vo.status as SkillStatus) || '未安装',
+    isOfficial: Boolean(vo.isOfficial),
+    isFree: Boolean(vo.isFree),
+    createTime: String(vo.createTime || ''),
+    updater: String(vo.updateNo || ''),
+    updateTime: String(vo.updateTime || ''),
+  }
+}
+
 export default function SkillStore() {
-  const [data, setData] = useState(mockData)
+  const [data, setData] = useState<SkillItem[]>([])
+  const [loading, setLoading] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
   const [current, setCurrent] = useState<SkillItem | null>(null)
   const [form] = Form.useForm()
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
+  const [filters, setFilters] = useState({ keyword: '', category: '', status: '' })
+
+  useEffect(() => {
+    loadData()
+  }, [pagination.current, pagination.pageSize])
+
+  const loadData = async (overrideFilters?: Record<string, string>) => {
+    setLoading(true)
+    try {
+      const activeFilters = overrideFilters ?? filters
+      const params: Record<string, unknown> = {
+        pageNo: pagination.current,
+        pageSize: pagination.pageSize,
+      }
+      if (activeFilters.keyword) params.keyword = activeFilters.keyword
+      if (activeFilters.category) params.category = activeFilters.category
+      if (activeFilters.status) params.status = activeFilters.status
+
+      const res = await getSkills(params)
+      const records = (res.data.data?.records as unknown as Record<string, unknown>[]) || []
+      setData(records.map(toSkillItem))
+      setPagination(p => ({ ...p, total: Number(res.data.data?.total || 0) }))
+    } catch {
+      message.error('加载Skill列表失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSearch = (value: string) => {
+    const newFilters = { ...filters, keyword: value }
+    setFilters(newFilters)
+    setPagination(p => ({ ...p, current: 1 }))
+    loadData(newFilters)
+  }
+
+  const handleFilterChange = (key: string, value: string) => {
+    const newFilters = { ...filters, [key]: value }
+    setFilters(newFilters)
+    setPagination(p => ({ ...p, current: 1 }))
+    loadData(newFilters)
+  }
+
+  const handleReset = () => {
+    setFilters({ keyword: '', category: '', status: '' })
+    setPagination(p => ({ ...p, current: 1 }))
+    loadData({ keyword: '', category: '', status: '' })
+  }
 
   const columns: ColumnsType<SkillItem> = [
     { title: 'Skill名称', dataIndex: 'skillName', width: 150 },
@@ -88,18 +141,18 @@ export default function SkillStore() {
         <Space>
           <Button type="link" size="small" onClick={() => { setCurrent(record); setDetailOpen(true) }}>详情</Button>
           {record.status === '未安装' && (
-            <Button type="link" size="small" icon={<DownloadOutlined />} onClick={() => message.success('安装成功')}>安装</Button>
+            <Button type="link" size="small" icon={<DownloadOutlined />} onClick={() => handleInstall(record)}>安装</Button>
           )}
           {record.status === '已安装' && (
-            <Popconfirm title="确定卸载？" onConfirm={() => message.success('卸载成功')}>
+            <Popconfirm title="确定卸载？" onConfirm={() => handleUninstall(record)}>
               <Button type="link" size="small" danger>卸载</Button>
             </Popconfirm>
           )}
           {record.status === '有更新可用' && (
-            <Button type="link" size="small" icon={<RocketOutlined />} onClick={() => message.success('更新成功')}>更新</Button>
+            <Button type="link" size="small" icon={<RocketOutlined />} onClick={() => handleInstall(record)}>更新</Button>
           )}
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => { setCurrent(record); form.setFieldsValue(record); setModalOpen(true) }}>编辑</Button>
-          <Popconfirm title="确定删除？" onConfirm={() => message.success('删除成功')}>
+          <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record)}>
             <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
         </Space>
@@ -107,12 +160,49 @@ export default function SkillStore() {
     },
   ]
 
+  const handleInstall = async (record: SkillItem) => {
+    try {
+      await installSkill(record.num!)
+      message.success('安装成功')
+      loadData()
+    } catch {
+      message.error('安装失败')
+    }
+  }
+
+  const handleUninstall = async (record: SkillItem) => {
+    try {
+      await uninstallSkill(record.num!)
+      message.success('卸载成功')
+      loadData()
+    } catch {
+      message.error('卸载失败')
+    }
+  }
+
+  const handleDelete = async (record: SkillItem) => {
+    try {
+      await deleteSkill(record.num!)
+      message.success('删除成功')
+      loadData()
+    } catch {
+      message.error('删除失败')
+    }
+  }
+
   const handleSubmit = async (values: { skillName: string; description: string; category: string; tags?: string[] }) => {
     try {
-      message.success(current ? '修改成功' : '创建成功')
+      if (current) {
+        await updateSkill({ ...values, id: current.skillId })
+        message.success('修改成功')
+      } else {
+        await createSkill(values)
+        message.success('创建成功')
+      }
       setModalOpen(false)
       form.resetFields()
       setCurrent(null)
+      loadData()
     } catch {
       message.error('操作失败')
     }
@@ -127,12 +217,55 @@ export default function SkillStore() {
         </Button>
       </div>
 
+      {/* 搜索/筛选栏 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col xs={24} sm={8}>
+          <Input.Search
+            placeholder="搜索 Skill 名称"
+            allowClear
+            enterButton={<SearchOutlined />}
+            value={filters.keyword}
+            onChange={(e) => setFilters(f => ({ ...f, keyword: e.target.value }))}
+            onSearch={handleSearch}
+          />
+        </Col>
+        <Col xs={12} sm={5}>
+          <Select
+            style={{ width: '100%' }}
+            placeholder="分类筛选"
+            value={filters.category || undefined}
+            onChange={(v) => handleFilterChange('category', v)}
+            options={SKILL_CATEGORY_OPTIONS}
+            allowClear
+          />
+        </Col>
+        <Col xs={12} sm={5}>
+          <Select
+            style={{ width: '100%' }}
+            placeholder="状态筛选"
+            value={filters.status || undefined}
+            onChange={(v) => handleFilterChange('status', v)}
+            options={SKILL_STATUS_OPTIONS}
+            allowClear
+          />
+        </Col>
+        <Col xs={24} sm={6} style={{ textAlign: 'right' }}>
+          <Button onClick={handleReset}>重置</Button>
+        </Col>
+      </Row>
+
       <Table
         columns={columns}
         dataSource={data}
         rowKey="skillId"
+        loading={loading}
         scroll={{ x: 1200 }}
-        pagination={{ showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+        pagination={{
+          ...pagination,
+          showSizeChanger: true,
+          showTotal: (t) => `共 ${t} 条`,
+          onChange: (page, size) => { setPagination({ current: page, pageSize: size, total: pagination.total }); loadData() },
+        }}
       />
 
       <Modal

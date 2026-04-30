@@ -1,38 +1,36 @@
-import { get, post, put, del } from './request'
+import { get, post } from './request'
 import type { SkillItem, SkillVersion, PageResult } from '../types'
 
+/** Skill 管理 API，对齐后端 /api/admin/skills 接口 */
+
 export function getSkills(params?: Record<string, unknown>) {
-  return get<PageResult<SkillItem>>('/skills', { params })
+  return get<PageResult<SkillItem>>('/admin/skills/list', { params })
 }
 
 export function getSkill(id: string) {
-  return get<SkillItem>(`/skills/${id}`)
+  return get<SkillItem>('/admin/skills/get', { params: { id } })
 }
 
 export function createSkill(data: { skillName: string; description: string; category: string; tags?: string[] }) {
-  return post<SkillItem>('/skills', data)
+  return post<SkillItem>('/admin/skills/create', data)
 }
 
-export function updateSkill(id: string, data: { skillName: string; description: string; category: string; tags?: string[] }) {
-  return put<SkillItem>(`/skills/${id}`, data)
+export function updateSkill(data: { id: string; skillName: string; description: string; category: string; tags?: string[] }) {
+  return post<SkillItem>('/admin/skills/update', data)
 }
 
-export function deleteSkill(id: string) {
-  return del(`/skills/${id}`)
+export function deleteSkill(num: string) {
+  return post('/admin/skills/delete', null, { params: { num } })
 }
 
-export function publishSkill(id: string) {
-  return post(`/skills/${id}/publish`)
+export function installSkill(num: string, version?: string) {
+  return post('/admin/skills/install', null, { params: { num } })
 }
 
-export function getSkillVersions(id: string) {
-  return get<SkillVersion[]>(`/skills/${id}/versions`)
+export function uninstallSkill(num: string) {
+  return post('/admin/skills/uninstall', null, { params: { num } })
 }
 
-export function installSkill(id: string, version?: string) {
-  return post(`/skills/${id}/install`, { version })
-}
-
-export function uninstallSkill(id: string) {
-  return post(`/skills/${id}/uninstall`)
+export function getSkillVersions(skillNum: string) {
+  return get<SkillVersion[]>('/admin/skills/versions', { params: { skillNum } })
 }

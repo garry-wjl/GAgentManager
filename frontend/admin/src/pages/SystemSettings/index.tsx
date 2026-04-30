@@ -5,6 +5,7 @@ import {
 } from 'antd'
 import { SaveOutlined } from '@ant-design/icons'
 import type { SystemParams } from '../../types'
+import { getSystemParams, updateSystemParams } from '../../api/system'
 
 const { Title } = Typography
 
@@ -12,34 +13,39 @@ export default function SystemSettings() {
   const [generalForm] = Form.useForm<SystemParams>()
   const [passwordForm] = Form.useForm<SystemParams>()
   const [securityForm] = Form.useForm<SystemParams>()
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState<string | null>(null)
 
   useEffect(() => {
-    // Load current system params (mock data)
-    const mockParams: Partial<SystemParams> = {
-      maxAgentsPerUser: 50,
-      maxConcurrentAgents: 1000,
-      defaultModel: '',
-      maxUploadFileSize: 50,
-      sessionTimeout: 60,
-      passwordMinLength: 8,
-      passwordRequireUpper: true,
-      passwordRequireLower: true,
-      passwordRequireNumber: true,
-      passwordRequireSpecial: true,
-      passwordExpireDays: 90,
-      maxLoginFailures: 5,
-      lockDuration: 30,
-      enableMfa: false,
-      enableSso: false,
-      dataRetentionDays: 365,
-    }
-    generalForm.setFieldsValue(mockParams)
-    passwordForm.setFieldsValue(mockParams)
-    securityForm.setFieldsValue(mockParams)
+    loadSystemParams()
   }, [])
 
-  const handleSave = (formName: string) => {
-    message.success(`${formName} 配置已保存`)
+  const loadSystemParams = async () => {
+    setLoading(true)
+    try {
+      const res = await getSystemParams()
+      const params = res.data.data || {}
+      generalForm.setFieldsValue(params)
+      passwordForm.setFieldsValue(params)
+      securityForm.setFieldsValue(params)
+    } catch {
+      // 静默失败
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSave = async (formName: string, form: typeof generalForm) => {
+    setSaving(formName)
+    try {
+      const values = form.getFieldsValue() as unknown as Record<string, string>
+      await updateSystemParams(values)
+      message.success(`${formName} 配置已保存`)
+    } catch {
+      message.error('保存失败')
+    } finally {
+      setSaving(null)
+    }
   }
 
   const generalTab = (
@@ -60,7 +66,7 @@ export default function SystemSettings() {
         <InputNumber min={1} max={3650} style={{ width: '100%' }} />
       </Form.Item>
       <Form.Item>
-        <Button type="primary" icon={<SaveOutlined />} onClick={() => handleSave('系统参数')}>
+        <Button type="primary" icon={<SaveOutlined />} loading={saving === '系统参数'} onClick={() => handleSave('系统参数', generalForm)}>
           保存配置
         </Button>
       </Form.Item>
@@ -88,7 +94,7 @@ export default function SystemSettings() {
         <InputNumber min={0} max={365} style={{ width: '100%' }} />
       </Form.Item>
       <Form.Item>
-        <Button type="primary" icon={<SaveOutlined />} onClick={() => handleSave('密码策略')}>
+        <Button type="primary" icon={<SaveOutlined />} loading={saving === '密码策略'} onClick={() => handleSave('密码策略', passwordForm)}>
           保存配置
         </Button>
       </Form.Item>
@@ -110,7 +116,7 @@ export default function SystemSettings() {
         <Switch />
       </Form.Item>
       <Form.Item>
-        <Button type="primary" icon={<SaveOutlined />} onClick={() => handleSave('安全设置')}>
+        <Button type="primary" icon={<SaveOutlined />} loading={saving === '安全设置'} onClick={() => handleSave('安全设置', securityForm)}>
           保存配置
         </Button>
       </Form.Item>
@@ -121,7 +127,7 @@ export default function SystemSettings() {
     <div>
       <Title level={4} style={{ marginBottom: 24 }}>系统配置</Title>
 
-      <Card>
+      <Card loading={loading}>
         <Tabs
           defaultActiveKey="general"
           items={[

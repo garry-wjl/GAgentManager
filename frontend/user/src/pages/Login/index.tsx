@@ -4,8 +4,6 @@ import { Form, Input, Button, message, Typography } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useAuthStore } from '../../store/auth'
 import { login } from '../../api/auth'
-import type { ApiResponse } from '../../types/api'
-import type { LoginResult } from '../../api/auth'
 import './index.css'
 
 const { Title, Text } = Typography
@@ -18,12 +16,12 @@ export default function Login() {
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/chat'
 
-  const onFinish = async (values: { loginAccount: string; password: string }) => {
+  const onFinish = async (values: { username: string; password: string }) => {
     setLoading(true)
     try {
-      const res = await login(values) as ApiResponse<LoginResult>
-      setToken(res.data.token)
-      setUser(res.data.user)
+      const res = await login(values)
+      setToken(res.data.data.token)
+      setUser(res.data.data.user)
       message.success('登录成功')
       navigate(from, { replace: true })
     } catch {
@@ -44,16 +42,16 @@ export default function Login() {
                 <rect x="4" y="4" width="40" height="40" rx="8" fill="rgba(255,255,255,0.2)" />
                 <path d="M16 14L34 24L16 34V14Z" fill="white" />
               </svg>
-              <span className="login-banner-title">GAgentManager</span>
+              <span className="login-banner-title">GAgent</span>
             </div>
             <div className="login-banner-text">
               <Title level={2} style={{ color: '#fff', fontWeight: 600, marginBottom: 16 }}>
-                企业级 Agent 管理平台
+                GAgent 智能工作台
               </Title>
               <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16, lineHeight: 1.8 }}>
-                统一管理企业 AI Agent、模型、Skill 与 MCP 服务
+                与 AI Agent 智能对话，高效完成工作任务
                 <br />
-                提供灵活的 Agent 生命周期管理与细粒度权限控制
+                支持多会话管理、思维链展示、Markdown 渲染及附件预览
               </Text>
             </div>
             <div className="login-banner-deco">
@@ -77,7 +75,7 @@ export default function Login() {
 
           <Form name="login" onFinish={onFinish} size="large" autoComplete="off" layout="vertical">
             <Form.Item
-              name="loginAccount"
+              name="username"
               rules={[{ required: true, message: '请输入手机号或邮箱' }]}
             >
               <Input

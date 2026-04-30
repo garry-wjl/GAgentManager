@@ -3,7 +3,7 @@ import type { ApiResponse } from '../types/api'
 import type { UserVO } from '../types/user'
 
 export interface LoginParams {
-  loginAccount: string
+  username: string
   password: string
 }
 
@@ -13,7 +13,7 @@ export interface LoginResult {
 }
 
 export function login(data: LoginParams) {
-  return post<ApiResponse<LoginResult>>('/auth/login', data)
+  return post<LoginResult>('/auth/login', data)
 }
 
 export function sendCaptcha(email: string) {

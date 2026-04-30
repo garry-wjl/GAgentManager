@@ -1,42 +1,44 @@
-import { get, post, put, del } from './request'
+import { get, post } from './request'
 import type { UserListItem, UserFormValues, PageResult } from '../types'
 
+/** 用户管理 API，对齐后端 /api/admin/users 接口 */
+
 export function getUsers(params: Record<string, unknown>) {
-  return get<PageResult<UserListItem>>('/users', { params })
+  return get<PageResult<UserListItem>>('/admin/users/list', { params })
 }
 
 export function getUser(id: string) {
-  return get<UserListItem>(`/users/${id}`)
+  return get<UserListItem>('/admin/users/get', { params: { id } })
 }
 
 export function createUser(data: UserFormValues) {
-  return post<UserListItem>('/users', data)
+  return post<UserListItem>('/admin/users/create', data)
 }
 
-export function updateUser(id: string, data: UserFormValues) {
-  return put<UserListItem>(`/users/${id}`, data)
+export function updateUser(data: UserFormValues & { id: string }) {
+  return post<UserListItem>('/admin/users/update', data)
 }
 
-export function deleteUser(id: string) {
-  return del(`/users/${id}`)
+export function deleteUser(num: string) {
+  return post('/admin/users/delete', null, { params: { num } })
 }
 
-export function enableUser(id: string) {
-  return post(`/users/${id}/enable`)
+export function enableUser(num: string) {
+  return post('/admin/users/activate', null, { params: { num } })
 }
 
-export function disableUser(id: string) {
-  return post(`/users/${id}/disable`)
+export function disableUser(num: string) {
+  return post('/admin/users/deactivate', null, { params: { num } })
 }
 
-export function resignUser(id: string) {
-  return post(`/users/${id}/resign`)
+export function resignUser(num: string) {
+  return post('/admin/users/resign', null, { params: { num } })
 }
 
-export function resetUserPassword(id: string, data: { newPassword: string; notifyMethod: string; expireHours?: number }) {
-  return post(`/users/${id}/reset-password`, data)
+export function resetUserPassword(num: string, newPassword: string) {
+  return post('/admin/users/reset-password', null, { params: { num, newPassword } })
 }
 
-export function batchUsers(action: string, ids: string[]) {
-  return post('/users/batch', { action, ids })
+export function batchCreateUsers(params: { users: UserFormValues[] }) {
+  return post('/admin/users/batch-create', params.users)
 }

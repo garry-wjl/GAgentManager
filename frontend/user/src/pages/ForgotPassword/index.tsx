@@ -58,7 +58,7 @@ export default function ForgotPassword() {
                 <rect x="4" y="4" width="40" height="40" rx="8" fill="rgba(255,255,255,0.2)" />
                 <path d="M16 14L34 24L16 34V14Z" fill="white" />
               </svg>
-              <span className="login-banner-title">GAgentManager</span>
+              <span className="login-banner-title">GAgent</span>
             </div>
             <div className="login-banner-text">
               <Title level={2} style={{ color: '#fff', fontWeight: 600, marginBottom: 16 }}>

@@ -1,5 +1,6 @@
 export interface SkillItem {
   skillId: string
+  num?: string
   skillName: string
   description: string
   icon?: string

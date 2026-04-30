@@ -1,5 +1,6 @@
 export interface RoleItem {
   roleId: string
+  num?: string
   roleCode: string
   roleName: string
   description?: string

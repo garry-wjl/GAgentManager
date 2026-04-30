@@ -1,38 +1,42 @@
-import { get, post, put, del } from './request'
-import type { ModelItem, ModelFormValues, ModelMonitoring, PageResult } from '../types'
+import { get, post } from './request'
+import type { ModelItem, ModelFormValues, PageResult } from '../types'
+
+/** 模型管理 API，对齐后端 /api/admin/models 接口 */
 
 export function getModels(params?: Record<string, unknown>) {
-  return get<PageResult<ModelItem>>('/models', { params })
+  return get<PageResult<ModelItem>>('/admin/models/list', { params })
 }
 
 export function getModel(id: string) {
-  return get<ModelItem>(`/models/${id}`)
+  return get<ModelItem>('/admin/models/get', { params: { id } })
 }
 
 export function createModel(data: ModelFormValues) {
-  return post<ModelItem>('/models', data)
+  return post<ModelItem>('/admin/models/create', data)
 }
 
-export function updateModel(id: string, data: ModelFormValues) {
-  return put<ModelItem>(`/models/${id}`, data)
+export function updateModel(data: ModelFormValues & { id: string }) {
+  return post<ModelItem>('/admin/models/update', data)
 }
 
-export function deleteModel(id: string) {
-  return del(`/models/${id}`)
+export function deleteModel(num: string) {
+  return post('/admin/models/delete', null, { params: { num } })
 }
 
-export function enableModel(id: string) {
-  return post(`/models/${id}/enable`)
+export function enableModel(num: string) {
+  return post('/admin/models/enable', null, { params: { num } })
 }
 
-export function disableModel(id: string) {
-  return post(`/models/${id}/disable`)
+export function disableModel(num: string) {
+  return post('/admin/models/disable', null, { params: { num } })
 }
 
-export function testModelConnection(id: string) {
-  return post(`/models/${id}/test`)
+export function testModelConnection(num: string) {
+  return post<TestResult>('/admin/models/test', null, { params: { num } })
 }
 
-export function getModelMonitoring(id: string) {
-  return get<ModelMonitoring>(`/models/${id}/monitoring`)
+export interface TestResult {
+  success: boolean
+  responseTime: number
+  errorMessage: string
 }

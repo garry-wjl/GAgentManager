@@ -2,14 +2,27 @@ import { get, post } from './request'
 import type { UserInfo } from '../types'
 
 export interface LoginParams {
-  loginAccount: string
+  username: string
   password: string
   rememberMe?: boolean
   captcha?: string
 }
 
+/** 后端 LoginVO 实际返回的字段 */
+export interface LoginVO {
+  accessToken: string
+  refreshToken: string
+  expiresIn: number
+  userId: number
+  username: string
+  realName?: string
+  avatar?: string
+  mfaRequired: boolean
+  user?: UserInfo
+}
+
 export function login(data: LoginParams) {
-  return post<{ token: string; user: UserInfo }>('/auth/login', data)
+  return post<LoginVO>('/auth/login', data)
 }
 
 export function logout() {

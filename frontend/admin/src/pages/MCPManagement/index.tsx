@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Table, Button, Space, Tag, Modal, Form, Input, Select, message,
   Popconfirm, Drawer, Descriptions, Tabs, Typography, InputNumber, Row, Col,
 } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, ThunderboltOutlined, HistoryOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, DeleteOutlined, ThunderboltOutlined, HistoryOutlined, SearchOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { MCPItem, MCPStatus, MCPFormValues } from '../../types'
+import { getMCPs, createMCP, updateMCP, deleteMCP, enableMCP, disableMCP, testMCPConnection } from '../../api/mcp'
+import type { MCPTestResult } from '../../api/mcp'
 
 const { TextArea } = Input
 const { Title, Text } = Typography
@@ -17,47 +19,91 @@ const statusMap: Record<MCPStatus, { text: string; color: string }> = {
   '异常': { text: '异常', color: 'red' },
 }
 
-const mockData: MCPItem[] = [
-  {
-    mcpId: '1',
-    mcpName: 'MySQL服务',
-    description: 'MySQL数据库MCP连接服务',
-    latestVersion: 'V1.2.0',
-    currentVersion: 'V1.2.0',
-    isEnabled: true,
-    status: '已连接',
-    boundAgentCount: 3,
-    creator: 'admin',
-    createTime: '2026-03-10 10:00:00',
-    updater: 'admin',
-    updateTime: '2026-04-25 14:00:00',
-    lastConnectTime: '2026-04-28 08:00:00',
-    errorCount: 0,
-  },
-  {
-    mcpId: '2',
-    mcpName: 'Redis缓存',
-    description: 'Redis缓存MCP服务',
-    latestVersion: 'V1.0.0',
-    currentVersion: 'V1.0.0',
-    isEnabled: true,
-    status: '未连接',
-    boundAgentCount: 1,
-    creator: 'admin',
-    createTime: '2026-04-01 09:00:00',
-    updater: 'admin',
-    updateTime: '2026-04-20 11:00:00',
-    errorCount: 2,
-  },
+const MCP_STATUS_OPTIONS = [
+  { label: '全部状态', value: '' },
+  { label: '未连接', value: '未连接' },
+  { label: '连接中', value: '连接中' },
+  { label: '已连接', value: '已连接' },
+  { label: '异常', value: '异常' },
 ]
 
+/** 将后端 McpVO 转换为前端 MCPItem */
+function toMCPItem(vo: Record<string, unknown>): MCPItem {
+  return {
+    mcpId: String(vo.id || ''),
+    num: String(vo.num || ''),
+    mcpName: String(vo.mcpName || ''),
+    description: String(vo.description || ''),
+    latestVersion: String(vo.latestVersion || ''),
+    currentVersion: String(vo.currentVersion || ''),
+    isEnabled: Boolean(vo.isEnabled),
+    status: (vo.status as MCPStatus) || '未连接',
+    boundAgentCount: Number(vo.boundAgentCount || 0),
+    creator: String(vo.creator || ''),
+    createTime: String(vo.createTime || ''),
+    updater: String(vo.updateNo || ''),
+    updateTime: String(vo.updateTime || ''),
+    lastConnectTime: vo.lastConnectTime ? String(vo.lastConnectTime) : undefined,
+    errorCount: Number(vo.errorCount || 0),
+  }
+}
+
 export default function MCPManagement() {
-  const [data, setData] = useState(mockData)
+  const [data, setData] = useState<MCPItem[]>([])
+  const [loading, setLoading] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
   const [current, setCurrent] = useState<MCPItem | null>(null)
   const [form] = Form.useForm()
   const [testingId, setTestingId] = useState<string | null>(null)
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
+  const [filters, setFilters] = useState({ keyword: '', status: '' })
+
+  useEffect(() => {
+    loadData()
+  }, [pagination.current, pagination.pageSize])
+
+  const loadData = async (overrideFilters?: Record<string, string>) => {
+    setLoading(true)
+    try {
+      const activeFilters = overrideFilters ?? filters
+      const params: Record<string, unknown> = {
+        pageNo: pagination.current,
+        pageSize: pagination.pageSize,
+      }
+      if (activeFilters.keyword) params.keyword = activeFilters.keyword
+      if (activeFilters.status) params.status = activeFilters.status
+
+      const res = await getMCPs(params)
+      const records = (res.data.data?.records as unknown as Record<string, unknown>[]) || []
+      setData(records.map(toMCPItem))
+      setPagination(p => ({ ...p, total: Number(res.data.data?.total || 0) }))
+    } catch {
+      message.error('加载MCP列表失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSearch = (value: string) => {
+    const newFilters = { ...filters, keyword: value }
+    setFilters(newFilters)
+    setPagination(p => ({ ...p, current: 1 }))
+    loadData(newFilters)
+  }
+
+  const handleFilterChange = (key: string, value: string) => {
+    const newFilters = { ...filters, [key]: value }
+    setFilters(newFilters)
+    setPagination(p => ({ ...p, current: 1 }))
+    loadData(newFilters)
+  }
+
+  const handleReset = () => {
+    setFilters({ keyword: '', status: '' })
+    setPagination(p => ({ ...p, current: 1 }))
+    loadData({ keyword: '', status: '' })
+  }
 
   const columns: ColumnsType<MCPItem> = [
     { title: '服务名称', dataIndex: 'mcpName', width: 130 },
@@ -92,16 +138,16 @@ export default function MCPManagement() {
             size="small"
             icon={<ThunderboltOutlined />}
             loading={testingId === record.mcpId}
-            onClick={() => { setTestingId(record.mcpId); setTimeout(() => { message.success('连通性测试通过'); setTestingId(null) }, 1500) }}
+            onClick={() => handleTest(record)}
           >测试</Button>
           {record.isEnabled ? (
-            <Popconfirm title="确定禁用？" onConfirm={() => message.success('禁用成功')}>
+            <Popconfirm title="确定禁用？" onConfirm={() => handleDisable(record)}>
               <Button type="link" size="small" danger>禁用</Button>
             </Popconfirm>
           ) : (
-            <Button type="link" size="small" onClick={() => message.success('启用成功')}>启用</Button>
+            <Button type="link" size="small" onClick={() => handleEnable(record)}>启用</Button>
           )}
-          <Popconfirm title="确定删除？" onConfirm={() => message.success('删除成功')}>
+          <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record)}>
             <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
         </Space>
@@ -109,12 +155,61 @@ export default function MCPManagement() {
     },
   ]
 
+  const handleTest = async (record: MCPItem) => {
+    setTestingId(record.mcpId)
+    try {
+      const res = await testMCPConnection(record.num!)
+      message.success(res.data.data?.success ? '连通性测试通过' : `测试失败: ${res.data.data?.errorMessage}`)
+    } catch {
+      message.error('测试失败')
+    } finally {
+      setTestingId(null)
+    }
+  }
+
+  const handleEnable = async (record: MCPItem) => {
+    try {
+      await enableMCP(record.num!)
+      message.success('启用成功')
+      loadData()
+    } catch {
+      message.error('启用失败')
+    }
+  }
+
+  const handleDisable = async (record: MCPItem) => {
+    try {
+      await disableMCP(record.num!)
+      message.success('禁用成功')
+      loadData()
+    } catch {
+      message.error('禁用失败')
+    }
+  }
+
+  const handleDelete = async (record: MCPItem) => {
+    try {
+      await deleteMCP(record.num!)
+      message.success('删除成功')
+      loadData()
+    } catch {
+      message.error('删除失败')
+    }
+  }
+
   const handleSubmit = async (values: MCPFormValues) => {
     try {
-      message.success(current ? '修改成功' : '创建成功')
+      if (current) {
+        await updateMCP({ ...values, id: current.mcpId })
+        message.success('修改成功')
+      } else {
+        await createMCP(values)
+        message.success('创建成功')
+      }
       setModalOpen(false)
       form.resetFields()
       setCurrent(null)
+      loadData()
     } catch {
       message.error('操作失败')
     }
@@ -129,12 +224,45 @@ export default function MCPManagement() {
         </Button>
       </div>
 
+      {/* 搜索/筛选栏 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col xs={24} sm={10}>
+          <Input.Search
+            placeholder="搜索 MCP 名称"
+            allowClear
+            enterButton={<SearchOutlined />}
+            value={filters.keyword}
+            onChange={(e) => setFilters(f => ({ ...f, keyword: e.target.value }))}
+            onSearch={handleSearch}
+          />
+        </Col>
+        <Col xs={12} sm={5}>
+          <Select
+            style={{ width: '100%' }}
+            placeholder="状态筛选"
+            value={filters.status || undefined}
+            onChange={(v) => handleFilterChange('status', v)}
+            options={MCP_STATUS_OPTIONS}
+            allowClear
+          />
+        </Col>
+        <Col xs={12} sm={9} style={{ textAlign: 'right' }}>
+          <Button onClick={handleReset}>重置</Button>
+        </Col>
+      </Row>
+
       <Table
         columns={columns}
         dataSource={data}
         rowKey="mcpId"
+        loading={loading}
         scroll={{ x: 1400 }}
-        pagination={{ showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+        pagination={{
+          ...pagination,
+          showSizeChanger: true,
+          showTotal: (t) => `共 ${t} 条`,
+          onChange: (page, size) => { setPagination({ current: page, pageSize: size, total: pagination.total }); loadData() },
+        }}
       />
 
       <Modal

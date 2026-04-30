@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { Form, Input, Button, Checkbox, message, Typography } from 'antd'
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons'
 import { useAuthStore } from '../../store/auth'
@@ -11,20 +11,38 @@ const { Title, Text, Link } = Typography
 export default function Login() {
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const { setToken, setUser } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [loginFailCount, setLoginFailCount] = useState(0)
 
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/'
+  // 优先使用 URL 中的 redirect 参数（来自 401 自动跳转），其次使用 location state
+  const redirectPath = searchParams.get('redirect')
+    || (location.state as { from?: { pathname: string } })?.from?.pathname
+    || '/'
 
-  const onFinish = async (values: { loginAccount: string; password: string; rememberMe?: boolean }) => {
+  const onFinish = async (values: { username: string; password: string; rememberMe?: boolean }) => {
     setLoading(true)
     try {
-      const { data } = await login(values)
-      setToken(data.data.token)
-      setUser(data.data.user)
+      const res = await login(values)
+      const loginData = res.data.data
+      setToken(loginData.accessToken)
+      // 后端 LoginVO 返回的是展开字段，需要组装成 UserInfo
+      setUser({
+        userId: String(loginData.userId),
+        username: loginData.username,
+        realName: loginData.realName || '',
+        nickname: '',
+        email: '',
+        phone: '',
+        avatar: loginData.avatar || '',
+        department: '',
+        roleNames: [],
+        source: '',
+        createTime: '',
+      })
       message.success('登录成功')
-      navigate(from, { replace: true })
+      navigate(redirectPath, { replace: true })
     } catch {
       setLoginFailCount((c) => c + 1)
     } finally {
@@ -80,7 +98,7 @@ export default function Login() {
 
           <Form name="login" onFinish={onFinish} size="large" autoComplete="off" layout="vertical">
             <Form.Item
-              name="loginAccount"
+              name="username"
               rules={[{ required: true, message: '请输入手机号或邮箱' }]}
             >
               <Input

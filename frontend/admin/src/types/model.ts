@@ -1,5 +1,6 @@
 export interface ModelItem {
   modelId: string
+  num?: string
   modelName: string
   provider: ModelProvider
   apiType: ModelApiType

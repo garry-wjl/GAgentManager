@@ -1,5 +1,6 @@
 export interface AgentItem {
   agentId: string
+  num?: string
   agentName: string
   agentType: AgentType
   description?: string
@@ -56,4 +57,48 @@ export interface AgentFormValues {
   timeoutSeconds?: number
   retryCount?: number
   boundModel?: string
+}
+
+/** Agent 详情视图对象，对齐后端 AgentVO */
+export interface AgentDetailVO {
+  id: string
+  num: string
+  agentCode: string
+  agentName: string
+  agentType: string
+  description: string
+  iconUrl: string
+  tags: string
+  status: string
+  version: string
+  systemPrompt: string
+  temperature: number
+  maxTokens: number
+  topP: number
+  topK: number
+  frequencyPenalty: number
+  presencePenalty: number
+  stopSequences: string
+  responseFormat: string
+  timeoutSeconds: number
+  retryCount: number
+  admins: string[]
+  createNo: string
+  updateNo: string
+  createTime: string
+  updateTime: string
+}
+
+/** Agent 资源绑定视图对象，对齐后端 AgentResourceBindingVO */
+export interface AgentResourceBinding {
+  id: string
+  num: string
+  agentId: string
+  resourceType: 'MODEL' | 'SKILL' | 'MCP' | 'WORKFLOW'
+  resourceId: string
+  resourceName: string
+  isDefault: boolean
+  sortOrder: number
+  config: string
+  createTime: string
 }
