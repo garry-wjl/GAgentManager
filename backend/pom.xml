@@ -12,13 +12,13 @@
     <description>Enterprise Agent Management Platform</description>
 
     <modules>
-        <module>gagent-manager-facade</module>
-        <module>gagent-manager-client</module>
-        <module>gagent-manager-domain</module>
-        <module>gagent-manager-infra</module>
-        <module>gagent-manager-application</module>
-        <module>gagent-manager-adapter</module>
-        <module>gagent-manager-start</module>
+        <module>facade</module>
+        <module>client</module>
+        <module>domain</module>
+        <module>infra</module>
+        <module>application</module>
+        <module>adapter</module>
+        <module>start</module>
     </modules>
 
     <properties>
@@ -52,32 +52,32 @@
             <!-- Internal modules -->
             <dependency>
                 <groupId>com.gagentmanager</groupId>
-                <artifactId>gagent-manager-facade</artifactId>
+                <artifactId>facade</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.gagentmanager</groupId>
-                <artifactId>gagent-manager-client</artifactId>
+                <artifactId>client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.gagentmanager</groupId>
-                <artifactId>gagent-manager-domain</artifactId>
+                <artifactId>domain</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.gagentmanager</groupId>
-                <artifactId>gagent-manager-infra</artifactId>
+                <artifactId>infra</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.gagentmanager</groupId>
-                <artifactId>gagent-manager-application</artifactId>
+                <artifactId>application</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.gagentmanager</groupId>
-                <artifactId>gagent-manager-adapter</artifactId>
+                <artifactId>adapter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
