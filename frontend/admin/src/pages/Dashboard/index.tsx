@@ -1,15 +1,14 @@
-import { useState, useEffect } from 'react'
-import { Row, Col, Card, Statistic, Space, Typography } from 'antd'
+import { useEffect, useState } from 'react'
+import { ProCard, StatisticCard } from '@ant-design/pro-components'
 import {
   RobotOutlined,
   UserOutlined,
   ThunderboltOutlined,
   CheckCircleOutlined,
 } from '@ant-design/icons'
-import type { StatisticProps } from 'antd'
 import { getDashboard } from '../../api/home'
 
-const { Title } = Typography
+const { Statistic } = StatisticCard
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -19,7 +18,7 @@ export default function Dashboard() {
     modelTotal: 0,
     skillTotal: 0,
     mcpTotal: 0,
-    notices: [] as any[],
+    notices: [] as unknown[],
   })
   const [loading, setLoading] = useState(false)
 
@@ -39,49 +38,54 @@ export default function Dashboard() {
     }
   }
 
-  const statItems = [
-    { title: 'Agent 总数', value: stats.agentTotal, icon: <RobotOutlined />, color: '#1677ff' },
-    { title: '在线 Agent', value: stats.onlineAgents, icon: <CheckCircleOutlined />, color: '#52c41a' },
-    { title: '活跃用户', value: stats.activeUsers, icon: <UserOutlined />, color: '#722ed1' },
-    { title: '模型总数', value: stats.modelTotal, icon: <ThunderboltOutlined />, color: '#fa8c16' },
-  ]
-
   return (
-    <div>
-      <Title level={4} style={{ marginBottom: 24 }}>系统概览</Title>
+    <ProCard loading={loading} title="系统概览">
+      <StatisticCard.Group direction="row">
+        <StatisticCard
+          statistic={{
+            title: 'Agent 总数',
+            value: stats.agentTotal,
+            icon: <RobotOutlined />,
+            valueStyle: { color: '#1677ff' },
+          }}
+        />
+        <StatisticCard
+          statistic={{
+            title: '在线 Agent',
+            value: stats.onlineAgents,
+            icon: <CheckCircleOutlined />,
+            valueStyle: { color: '#52c41a' },
+          }}
+        />
+        <StatisticCard
+          statistic={{
+            title: '活跃用户',
+            value: stats.activeUsers,
+            icon: <UserOutlined />,
+            valueStyle: { color: '#722ed1' },
+          }}
+        />
+        <StatisticCard
+          statistic={{
+            title: '模型总数',
+            value: stats.modelTotal,
+            icon: <ThunderboltOutlined />,
+            valueStyle: { color: '#fa8c16' },
+          }}
+        />
+      </StatisticCard.Group>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        {statItems.map((s, i) => (
-          <Col xs={24} sm={12} lg={6} key={i}>
-            <Card loading={loading}>
-              <Statistic
-                title={s.title}
-                value={s.value}
-                prefix={s.icon}
-                valueStyle={{ color: s.color }}
-              />
-            </Card>
-          </Col>
-        ))}
-      </Row>
-
-      <Title level={4} style={{ marginBottom: 24 }}>系统公告</Title>
-      <Row gutter={[16, 16]}>
+      <ProCard title="系统公告" style={{ marginTop: 24 }} loading={loading}>
         {stats.notices.length === 0 ? (
-          <Col span={24}><Card><Typography.Text type="secondary">暂无公告</Typography.Text></Card></Col>
+          <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>暂无公告</div>
         ) : (
-          stats.notices.map((n, i) => (
-            <Col xs={24} sm={12} lg={8} key={i}>
-              <Card hoverable>
-                <Typography.Text strong>{n.title}</Typography.Text>
-                <Typography.Paragraph type="secondary" ellipsis style={{ marginBottom: 0, marginTop: 8 }}>
-                  {n.content}
-                </Typography.Paragraph>
-              </Card>
-            </Col>
-          ))
+          <StatisticCard.Group direction="row">
+            {(stats.notices as Array<{ title: string; content: string }>).slice(0, 6).map((n, i) => (
+              <StatisticCard key={i} title={n.title} description={n.content} />
+            ))}
+          </StatisticCard.Group>
         )}
-      </Row>
-    </div>
+      </ProCard>
+    </ProCard>
   )
 }

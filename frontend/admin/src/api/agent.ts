@@ -1,5 +1,5 @@
 import { get, post } from './request'
-import type { AgentItem, AgentFormValues, AgentVersionItem, AgentDetailVO, AgentResourceBinding, PageResult } from '../types'
+import type { AgentItem, AgentFormValues, AgentVersionItem, AgentDetailVO, AgentResourceBinding, PageResult, BindModelParam, BindResourceParamV2, UpdateBindingSortParam, EnabledModelVO } from '../types'
 
 /** Agent 管理 API，对齐后端 /api/admin/agents 接口 */
 
@@ -58,4 +58,49 @@ export function rollbackAgent(num: string, targetVersion: string) {
 /** 解绑资源 */
 export function unbindResource(bindingNum: string) {
   return post('/admin/agents/unbind', null, { params: { bindingNum } })
+}
+
+/** 按类型查询资源绑定（含状态实时校验） */
+export function getAgentBindingsByType(agentId: string, resourceType: string) {
+  return get<AgentResourceBinding[]>('/admin/agents/bindings/by-type', { params: { agentId, resourceType } })
+}
+
+/** 查询所有已启用模型列表 */
+export function getEnabledModels() {
+  return get<EnabledModelVO[]>('/admin/agents/enabled-models')
+}
+
+/** 绑定模型 */
+export function bindModel(agentNum: string, data: BindModelParam) {
+  return post('/admin/agents/bind-model', data, { params: { agentNum } })
+}
+
+/** 绑定工作流 */
+export function bindWorkflow(agentNum: string, data: BindResourceParamV2) {
+  return post('/admin/agents/bind-workflow', data, { params: { agentNum } })
+}
+
+/** 解绑工作流 */
+export function unbindWorkflow(bindingNum: string) {
+  return post('/admin/agents/unbind-workflow', null, { params: { bindingNum } })
+}
+
+/** 启停工作流 */
+export function toggleWorkflow(bindingNum: string) {
+  return post('/admin/agents/toggle-workflow', null, { params: { bindingNum } })
+}
+
+/** 绑定 Skill */
+export function bindSkill(agentNum: string, data: BindResourceParamV2) {
+  return post('/admin/agents/bind-skill', data, { params: { agentNum } })
+}
+
+/** 解绑 Skill */
+export function unbindSkill(bindingNum: string) {
+  return post('/admin/agents/unbind-skill', null, { params: { bindingNum } })
+}
+
+/** 更新资源绑定排序 */
+export function updateBindingSort(data: UpdateBindingSortParam) {
+  return post('/admin/agents/update-binding-sort', data)
 }

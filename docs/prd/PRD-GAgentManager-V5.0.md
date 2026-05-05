@@ -191,7 +191,7 @@ GAgentManager - 企业级Agent管理平台
 | rollbackToVersion | String | 否 | 如果已回滚，记录回滚到的目标版本号 |
 
 ##### 4.1.1.2 Skill配置
-- Skill绑定：Agent只能使用Skill商店中已安装的Skill
+- Skill绑定：Agent只能使用Skill管理中已上架的Skill
 - Skill可见性控制：配置哪些Skill对该Agent可见
 - Skill关联配置：支持特定Skill与Agent的关联和优先级设置
 - Skill权限管理：基于权限的Skill访问控制
@@ -203,7 +203,7 @@ GAgentManager - 企业级Agent管理平台
 |--------|----------|----------|-----------|
 | bindingId | String | 是 | 绑定关系唯一标识，系统自动生成 |
 | agentId | String | 是 | 所属Agent ID |
-| skillId | String | 是 | Skill ID（来自Skill商店已安装的Skill） |
+| skillId | String | 是 | Skill ID（来自Skill管理中已上架的Skill） |
 | skillName | String | 是 | Skill名称，只读，关联展示 |
 | skillVersion | String | 是 | Skill版本，只读 |
 | isEnabled | Boolean | 是 | 是否启用此Skill，默认true |
@@ -433,7 +433,7 @@ GAgentManager - 企业级Agent管理平台
 | userId | String | 是 | 操作用户ID |
 | username | String | 是 | 操作用户名 |
 | action | String | 是 | 操作类型（创建Agent、删除用户等） |
-| module | Enum | 是 | 所属模块：Agent管理、用户管理、权限管理、Skill商店、MCP管理、模型管理、系统设置 |
+| module | Enum | 是 | 所属模块：Agent管理、用户管理、权限管理、Skill管理、MCP管理、模型管理、系统设置 |
 | targetId | String | 否 | 操作目标对象ID |
 | targetName | String | 否 | 操作目标对象名称 |
 | detail | JSON | 否 | 操作详情（变更前后数据） |
@@ -584,7 +584,7 @@ GAgentManager - 企业级Agent管理平台
 |--------|----------|----------|-----------|
 | resourceId | String | 是 | 权限资源唯一标识，系统自动生成 |
 | resourceCode | String | 是 | 资源编码，如agent、user、skill、mcp、model、system |
-| resourceName | String | 是 | 资源名称，如Agent管理、用户管理、Skill商店 |
+| resourceName | String | 是 | 资源名称，如Agent管理、用户管理、Skill管理 |
 | resourceType | Enum | 是 | 资源类型：模块、菜单、按钮、接口 |
 | parentId | String | 否 | 父资源ID，支持资源层级结构 |
 | sortOrder | Number | 否 | 排序序号 |
@@ -685,9 +685,59 @@ GAgentManager - 企业级Agent管理平台
 - 权限查询响应时间小于100毫秒
 - 所有角色和权限变更操作均有审计日志记录
 
-#### 4.1.5 Skill商店
-**功能描述：** 提供Skill的发现、安装、更新和管理功能，为Agent提供可使用的功能扩展
-**用户故事：** 作为用户，我希望能够方便地找到并安装各种有用的Skill来增强Agent的功能。
+#### 4.1.5 Skill管理
+**功能描述：** 提供Skill的上传、版本管理、上架/下架功能，为Agent提供可使用的功能扩展
+**用户故事：** 作为管理员，我希望能够通过上传压缩包或文件夹的方式新增Skill，并进行上架、下架和版本发布管理，以便为Agent提供功能扩展。
+
+> **注意：Skill 管理仅对管理端开放，普通用户端不展示任何 Skill 相关功能。**
+
+**Skill 本质定义：**
+
+Skill 本质上是一批文件的集合。一个标准 Skill 包包含以下结构：
+
+```
+skill-name/
+├── SKILL.md              # 必需：Skill 主定义文件（含 YAML 元数据 + 指令正文）
+├── scripts/              # 可选：脚本文件（Python、Shell 等）
+├── references/           # 可选：参考文档、API 文档等
+├── assets/               # 可选：图片、图标等资源文件
+├── examples/             # 可选：使用示例
+└── ...                   # 可选：其他自定义文件
+```
+
+**SKILL.md YAML 元数据规范**（参考 SkillHub 社区标准）：
+
+```yaml
+---
+name: skill-name-in-kebab-case    # 必需：唯一标识，kebab-case，最大64字符
+description: Brief description     # 必需：功能描述，说明 Skill 用途和触发条件
+author: Author Name                # 可选：作者或组织名称
+version: 1.0.0                     # 可选：语义化版本号（MAJOR.MINOR.PATCH）
+tags:                              # 可选：标签列表，用于分类和搜索
+  - tag1
+  - tag2
+category: development              # 可选：所属领域（development/automation/creative/communication 等）
+dependencies:                      # 可选：依赖的其他 Skill 或工具包
+  - other-skill-name
+---
+```
+
+| 字段 | 是否必填 | 说明 |
+|------|---------|------|
+| **name** | 必填 | 唯一标识符，kebab-case，最大64字符，仅小写字母、数字和连字符 |
+| **description** | 必填 | 功能描述，说明 Skill 做什么、何时触发 |
+| **author** | 可选 | 作者或组织名称 |
+| **version** | 可选 | 语义化版本号（MAJOR.MINOR.PATCH），如 1.0.0 |
+| **tags** | 可选 | 标签字符串列表，用于分类和搜索 |
+| **category** | 可选 | 所属领域分类，如 development、automation、creative、communication 等 |
+| **dependencies** | 可选 | 依赖的其他 Skill 或工具包列表 |
+
+**Skill 新增方式：**
+
+- **上传压缩包**：支持 `.zip` 格式压缩包上传，系统自动解压并解析 SKILL.md 元数据
+- **上传文件夹**：支持直接上传包含 SKILL.md 的完整文件夹
+- 上传后系统自动校验文件结构（必须包含 SKILL.md 文件）
+- 自动提取 YAML 元数据并填充到 Skill 元数据表
 
 **Skill 列表字段设计：**
 
@@ -697,18 +747,18 @@ GAgentManager - 企业级Agent管理平台
 | skillName | String | 是 | Skill名称，2-50字符 |
 | description | Text | 是 | 功能描述，最大500字符 |
 | icon | File | 否 | Skill图标，支持PNG/JPG/SVG，最大2MB |
-| category | Enum | 是 | 分类：数据处理、工具调用、内容生成、搜索查询、系统集成、自定义 |
+| category | Enum | 是 | 分类：数据处理、工具调用、内容生成、搜索查询、系统集成、自定义、开发、自动化、创意、通信等 |
 | tags | Array | 否 | 标签列表，最多20个 |
 | version | String | 是 | 当前版本号 |
 | author | String | 是 | 开发者/作者名称 |
-| installCount | Number | 是 | 安装次数 |
-| rating | Number | 是 | 平均评分，范围0.0-5.0 |
-| ratingCount | Number | 是 | 评分人数 |
-| status | Enum | 是 | 状态：未安装、已安装、有更新可用 |
-| isOfficial | Boolean | 是 | 是否官方Skill |
-| isFree | Boolean | 是 | 是否免费 |
-| minAgentVersion | String | 否 | 最低兼容Agent版本 |
-| createTime | DateTime | 是 | 上架时间 |
+| status | Enum | 是 | 状态：草稿、已上架、已下架 |
+| fileCount | Number | 是 | Skill 包含的文件总数 |
+| fileSize | Number | 是 | Skill 总文件大小（字节） |
+| boundAgentCount | Number | 是 | 已绑定此Skill的Agent数量 |
+| boundAgentCount | Number | 是 | 已绑定此Skill的Agent数量 |
+| dependencies | Array | 否 | 依赖的其他Skill列表 |
+| creator | String | 是 | 创建人 |
+| createTime | DateTime | 是 | 创建时间 |
 | updater | String | 是 | 更新人，系统自动记录最后修改人 |
 | updateTime | DateTime | 是 | 更新时间 |
 
@@ -720,81 +770,58 @@ GAgentManager - 企业级Agent管理平台
 | skillName | String | 是 | Skill名称 |
 | description | Text | 是 | 详细描述，支持Markdown格式 |
 | icon | File | 否 | 图标 |
-| screenshots | Array | 否 | 截图列表，最多10张，支持PNG/JPG |
 | category | Enum | 是 | 分类 |
 | tags | Array | 否 | 标签列表 |
 | version | String | 是 | 当前版本 |
-| changelog | Text | 是 | 版本更新日志 |
-| dependencies | Array | 否 | 依赖的其他Skill列表 |
-| configSchema | JSON | 否 | 配置项Schema，JSON Schema格式 |
 | author | String | 是 | 作者信息 |
-| authorUrl | String | 否 | 作者主页 |
-| documentation | String | 否 | 文档链接 |
-| license | String | 否 | 许可证类型 |
-| installCount | Number | 是 | 安装次数 |
-| rating | Number | 是 | 平均评分 |
-| installStatus | Enum | 是 | 安装状态：未安装、已安装、安装中、安装失败 |
-| installedVersion | String | 否 | 已安装版本号（如果已安装） |
-| hasUpdate | Boolean | 是 | 是否有可用更新 |
+| status | Enum | 是 | 状态：草稿、已上架、已下架 |
+| fileCount | Number | 是 | Skill 包含的文件总数 |
+| fileSize | Number | 是 | Skill 总文件大小（字节） |
+| fileTree | Array | 是 | Skill 文件树结构，包含路径、类型、大小 |
+| skillMdContent | Text | 是 | SKILL.md 完整内容（YAML元数据+指令正文） |
+| yamlMetadata | JSON | 是 | 解析后的 YAML 元数据（name、description、author、version、tags、category、dependencies） |
+| boundAgents | Array | 是 | 已绑定此Skill的Agent列表 |
+| versionHistory | Array | 是 | 版本历史记录（版本号、发布备注、发布时间、发布人） |
 
-**Skill 评论字段设计：**
-
-| 字段名 | 字段类型 | 是否必填 | 说明/约束 |
-|--------|----------|----------|-----------|
-| reviewId | String | 是 | 评论唯一标识 |
-| skillId | String | 是 | Skill ID |
-| userId | String | 是 | 评论用户ID |
-| username | String | 是 | 评论用户名 |
-| rating | Number | 是 | 评分，1-5星 |
-| content | Text | 是 | 评论内容，最大1000字符 |
-| isVerified | Boolean | 是 | 是否已安装用户（仅已安装用户可评论） |
-| createTime | DateTime | 是 | 评论时间 |
-| replyCount | Number | 是 | 回复数量 |
-
-**Skill 安装记录字段设计：**
+**Skill 版本发布字段设计：**
 
 | 字段名 | 字段类型 | 是否必填 | 说明/约束 |
 |--------|----------|----------|-----------|
-| installId | String | 是 | 安装记录唯一标识 |
-| skillId | String | 是 | Skill ID |
-| skillName | String | 是 | Skill名称 |
-| installedVersion | String | 是 | 安装的版本号 |
-| installStatus | Enum | 是 | 安装状态：安装中、成功、失败、已卸载 |
-| installUser | String | 是 | 操作人 |
-| installTime | DateTime | 是 | 安装时间 |
-| failReason | Text | 否 | 失败原因 |
-| configData | JSON | 否 | 安装后的配置数据 |
-| boundAgents | Array | 否 | 已绑定此Skill的Agent列表 |
+| versionId | String | 是 | 版本唯一标识，系统自动生成 |
+| skillId | String | 是 | 所属Skill ID |
+| version | String | 是 | 版本号，语义化版本格式（V主版本.次版本.修订号） |
+| releaseNote | Text | 是 | 发布备注/变更说明，最大1000字符 |
+| creator | String | 是 | 发布人 |
+| publishTime | DateTime | 是 | 发布时间 |
 
 **具体需求：**
-- Skill新增：创建新的Skill，编写定义文件、配置参数
-- Skill删除：删除不再使用的Skill，需确认无Agent绑定
-- Skill修改：编辑Skill的定义和配置，修改后需重新发布
-- Skill发布：将修改后的Skill发布，每次发布自动生成新版本
-- Skill版本管理：
-  - 采用语义化版本号（V主版本.次版本.修订号，如V1.0.0）
-  - 创建时自动生成初始版本V1.0.0（草稿状态）
-  - 每次发布时版本号自动递增（修订号+1）
-  - 支持版本历史记录和查看
-  - 支持版本回滚
-- Skill分类浏览：按功能、行业、热度等维度分类
-- Skill搜索功能：全文搜索、标签筛选
-- Skill详情页面：功能介绍、使用方法、评价等
-- Skill安装和更新：支持按指定版本安装、自动更新到最新版
-- 个人Skill管理：已安装Skill的管理
-- Skill市场集成：与第三方Skill市场的对接
-- Skill评价系统：用户评分和评论
-- Skill推荐算法：基于使用习惯的智能推荐
-- Skill可见性：仅对具有相应权限的Agent可用
-- Skill关联：支持将指定版本的Skill与特定Agent绑定
-- Skill安全验证：上传前的安全验证和测试
+
+- **Skill新增（上传文件）**：
+  - **上传压缩包**：支持 `.zip` 格式压缩包上传，系统自动解压到临时目录
+  - **上传文件夹**：支持直接上传包含 SKILL.md 的文件夹（通过浏览器 File API 或拖拽）
+  - **自动校验**：上传后自动校验文件结构，必须包含 `SKILL.md` 文件
+  - **元数据提取**：自动解析 SKILL.md 中的 YAML frontmatter，提取 name、description、author、version、tags、category、dependencies 等字段
+  - **安全扫描**：上传前执行安全验证，检查文件类型、大小、潜在恶意脚本
+  - **预览确认**：展示解析后的 Skill 信息和文件树，管理员确认后入库，初始状态为"草稿"
+- **Skill上架**：将草稿或已下架状态的 Skill 设置为"已上架"，上架后可供 Agent 绑定使用
+- **Skill下架**：将已上架的 Skill 设置为"已下架"，下架后不可被新 Agent 绑定，已绑定的 Agent 不受影响
+- **Skill发布**：
+  - 每次发布都生成一个新的版本号（修订号自动+1，也可手动指定主版本/次版本升级）
+  - 发布时**必须填写发布备注**，说明本次变更内容
+  - 支持版本历史记录查看
+- **Skill列表筛选**：支持按分类、标签、状态（草稿/已上架/已下架）、关键词搜索进行筛选
+- **Skill删除**：删除不再使用的 Skill，需确认无 Agent 绑定
+- **Skill可见性**：仅对具有相应权限的 Agent 可用
 
 **验收标准：**
-- Skill安装成功率99%以上
-- 支持按指定版本安装和更新功能
+- Skill 上传功能正常：支持 `.zip` 压缩包和文件夹上传，最大文件大小 50MB
+- SKILL.md 元数据解析准确率 100%（name、description 为必填项）
+- 上传校验：缺少 SKILL.md 文件的压缩包/文件夹应拒绝上传并提示用户
+- 文件树可在详情页完整展示，支持展开/折叠目录节点
+- 上架/下架操作即时生效
+- 每次发布必须填写发布备注，不填写不可发布
 - 搜索结果响应时间小于1秒
-- Agent只能使用已授权且已绑定特定版本的Skill
-- Agent使用最新版Skill时，需更新Agent的Skill配置以绑定到新版本
+- Agent只能使用已上架且已绑定特定版本的Skill
 
 #### 4.1.6 MCP管理
 **功能描述：** 管理Model Context Protocol（MCP）服务和连接，为Agent提供模型上下文协议支持
@@ -1063,12 +1090,11 @@ GAgentManager - 企业级Agent管理平台
    - 权限资源管理：查看权限资源树（模块、菜单、按钮、接口）
    - 权限变更审计日志
 
-5. Skill商店（4.1.5）
-   - Skill市场浏览（分类、标签、搜索）
-   - Skill详情查看与安装
-   - 已安装Skill管理
-   - Skill操作（管理端）：新增、删除、修改、发布
-   - Skill版本管理：版本历史查看、版本状态控制
+5. Skill管理（4.1.5）
+   - Skill列表（分页、筛选：按分类、标签、状态、关键词搜索）
+   - Skill详情查看（文件树、SKILL.md 内容预览）
+   - Skill操作：新增（上传压缩包/文件夹）、上架、下架、删除、发布（填写发布备注）
+   - Skill版本管理：版本历史查看
 
 6. MCP管理（4.1.6）
    - MCP服务列表（分页、筛选、搜索）
@@ -1486,11 +1512,12 @@ GAgentManager - 企业级Agent管理平台
    - 配置模型参数和资源分配
    - 部署模型
 
-9. **从Skill商店安装所需Skill**
-   - 浏览Skill商店
-   - 搜索或筛选需要的Skill
-   - 查看Skill详情和评价
-   - 安装Skill
+9. **管理Skill（管理员）**
+   - 进入Skill管理页面（仅管理员可见）
+   - 上传压缩包或文件夹新增Skill
+   - 上架/下架Skill
+   - 查看Skill详情、版本历史
+   - 发布新版本并填写发布备注
 
 10. **配置MCP连接**
    - 进入MCP管理页面
@@ -1503,7 +1530,7 @@ GAgentManager - 企业级Agent管理平台
    - 选择创建新Agent
    - 配置Agent基本信息和参数（基础配置）
    - 从模型管理中选择已注册模型
-   - 从Skill商店中选择已安装Skill（Skill配置）
+   - 从Skill管理中选择已上架Skill（Skill配置）
    - 从MCP管理中选择已配置MCP服务（MCP配置）
    - 选择可用的工作流作为Agent工具（工作流管理）
    - 发布Agent
@@ -1563,7 +1590,7 @@ GAgentManager - 企业级Agent管理平台
 - 资源关联功能
 
 #### Phase 3: 增强功能 (Week 13-20)
-- Skill商店开发
+- Skill管理开发（上传、上架/下架、版本发布、列表筛选）
 - MCP高级管理功能
 - 工作流引擎开发
 - 模型管理增强功能（连通性测试、使用统计）
@@ -1575,7 +1602,7 @@ GAgentManager - 企业级Agent管理平台
 - 用户体验优化
 
 **交付物：**
-- Skill商店系统
+- Skill管理系统（上传、上架/下架、版本发布、列表筛选）
 - MCP管理系统
 - 模型管理系统
 - 用户管理系统
@@ -1687,7 +1714,7 @@ GAgentManager - 企业级Agent管理平台
 - 用户满意度评分：85%以上
 - Agent发布时间：从小时级缩短到分钟级
 - 模型部署时间：从小时级缩短到分钟级
-- 技能安装成功率：99%以上
+- Skill上架成功率99%以上
 - 工作流执行成功率：98%以上
 - 仪表盘加载速度：<2秒
 - 模型推理延迟：<2秒
@@ -1737,8 +1764,8 @@ GAgentManager - 企业级Agent管理平台
 
 ---
 
-**文档版本：** 5.5  
-**最后更新：** 2026年04月28日  
+**文档版本：** 5.6  
+**最后更新：** 2026年05月01日  
 **作者：** GAgentManager 产品团队  
-**更新说明：** 新增RBAC权限管理模块（角色/权限/用户关联）；完善用户端功能（登录/找回密码/个人中心/Agent对话/会话管理/消息渲染含思维链、Markdown、附件/网页卡片）；更新4.2.1管理端界面对齐最新模块；删除模型管理中的价格/配额/速率限制；统一术语和模块引用  
+**更新说明：** Skill模块重构：Skill仅对管理端开放，去除Skill市场/评价系统/个人Skill管理，改为管理端Skill管理（上传压缩包/文件夹、上架/下架、发布、列表筛选）；更新发布流程要求（每次发布需填写发布备注）；统一Skill相关术语（Skill商店→Skill管理）  
 **审核人：** 产品负责人、技术负责人、业务负责人

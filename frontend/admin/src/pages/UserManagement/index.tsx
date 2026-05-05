@@ -1,15 +1,10 @@
-import { useState, useEffect } from 'react'
-import {
-  Table, Button, Space, Tag, Modal, Form, Input, Select, message,
-  Popconfirm, Descriptions, Typography, InputNumber, DatePicker, Row, Col,
-} from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, KeyOutlined, UserSwitchOutlined, SearchOutlined } from '@ant-design/icons'
-import type { ColumnsType } from 'antd/es/table'
-import type { UserListItem, UserFormValues, UserStatus, UserSource } from '../../types'
-import { getUsers, createUser, updateUser, deleteUser, enableUser, disableUser, resignUser, resetUserPassword } from '../../api/user'
-
-const { TextArea } = Input
-const { Title } = Typography
+import { Button, Space, Tag, message, Popconfirm } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined, UserSwitchOutlined, KeyOutlined } from '@ant-design/icons'
+import { ProTable, ModalForm, ProFormText, ProFormSelect, ProFormTextArea } from '@ant-design/pro-components'
+import type { ProColumns } from '@ant-design/pro-components'
+import type { UserListItem, UserStatus, UserSource } from '../../types'
+import { getUsers, createUser, updateUser, deleteUser, enableUser, disableUser, resetUserPassword } from '../../api/user'
+import { useState } from 'react'
 
 const statusColor: Record<UserStatus, string> = {
   '已启用': 'green',
@@ -18,12 +13,11 @@ const statusColor: Record<UserStatus, string> = {
   '已删除': 'default',
 }
 
-const USER_STATUS_OPTIONS = [
-  { label: '全部状态', value: '' },
-  { label: '已启用', value: '已启用' },
-  { label: '已禁用', value: '已禁用' },
-  { label: '已离职', value: '已离职' },
-]
+const STATUS_OPTIONS: Record<string, { text: string }> = {
+  '已启用': { text: '已启用' },
+  '已禁用': { text: '已禁用' },
+  '已离职': { text: '已离职' },
+}
 
 /** 将后端 UserVO 转换为前端 UserListItem */
 function toUserListItem(vo: Record<string, unknown>): UserListItem {
@@ -54,100 +48,84 @@ function toUserListItem(vo: Record<string, unknown>): UserListItem {
 }
 
 export default function UserManagement() {
-  const [data, setData] = useState<UserListItem[]>([])
-  const [loading, setLoading] = useState(false)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [resetOpen, setResetOpen] = useState(false)
   const [current, setCurrent] = useState<UserListItem | null>(null)
-  const [form] = Form.useForm()
-  const [resetForm] = Form.useForm()
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
-  const [filters, setFilters] = useState({ keyword: '', status: '' })
+  const [resetOpen, setResetOpen] = useState(false)
+  const [resetForm] = useState({ newPassword: '', confirmNewPassword: '' })
 
-  useEffect(() => {
-    loadData()
-  }, [pagination.current, pagination.pageSize])
-
-  const loadData = async (overrideFilters?: Record<string, string>) => {
-    setLoading(true)
-    try {
-      const activeFilters = overrideFilters ?? filters
-      const params: Record<string, unknown> = {
-        pageNo: pagination.current,
-        pageSize: pagination.pageSize,
-      }
-      if (activeFilters.keyword) params.keyword = activeFilters.keyword
-      if (activeFilters.status) params.status = activeFilters.status
-
-      const res = await getUsers(params)
-      const records = (res.data.data?.records as unknown as Record<string, unknown>[]) || []
-      setData(records.map(toUserListItem))
-      setPagination(p => ({ ...p, total: Number(res.data.data?.total || 0) }))
-    } catch {
-      message.error('加载用户列表失败')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleSearch = (value: string) => {
-    const newFilters = { ...filters, keyword: value }
-    setFilters(newFilters)
-    setPagination(p => ({ ...p, current: 1 }))
-    loadData(newFilters)
-  }
-
-  const handleFilterChange = (key: string, value: string) => {
-    const newFilters = { ...filters, [key]: value }
-    setFilters(newFilters)
-    setPagination(p => ({ ...p, current: 1 }))
-    loadData(newFilters)
-  }
-
-  const handleReset = () => {
-    setFilters({ keyword: '', status: '' })
-    setPagination(p => ({ ...p, current: 1 }))
-    loadData({ keyword: '', status: '' })
-  }
-
-  const columns: ColumnsType<UserListItem> = [
-    { title: '用户名', dataIndex: 'username', width: 120 },
-    { title: '姓名', dataIndex: 'realName', width: 120 },
-    { title: '邮箱', dataIndex: 'email', width: 180 },
-    { title: '手机号', dataIndex: 'phone', width: 130 },
+  const columns: ProColumns<UserListItem>[] = [
+    {
+      title: '用户名',
+      dataIndex: 'username',
+      width: 120,
+    },
+    {
+      title: '姓名',
+      dataIndex: 'realName',
+      width: 120,
+    },
+    {
+      title: '邮箱',
+      dataIndex: 'email',
+      width: 180,
+      search: false,
+    },
+    {
+      title: '手机号',
+      dataIndex: 'phone',
+      width: 130,
+      search: false,
+    },
     {
       title: '角色',
       dataIndex: 'roleNames',
       width: 150,
-      render: (roles: string[]) => roles.map((r) => <Tag key={r}>{r}</Tag>),
+      search: false,
+      render: (_, r) => r.roleNames.map((role) => <Tag key={role}>{role}</Tag>),
     },
     {
       title: '状态',
       dataIndex: 'status',
       width: 90,
-      render: (v: UserStatus) => <Tag color={statusColor[v]}>{v}</Tag>,
+      valueEnum: STATUS_OPTIONS,
+      render: (_, r) => <Tag color={statusColor[r.status]}>{r.status}</Tag>,
     },
-    { title: '来源', dataIndex: 'source', width: 100 },
-    { title: '最近登录', dataIndex: 'lastLoginTime', width: 170 },
-    { title: '创建时间', dataIndex: 'createTime', width: 170 },
+    {
+      title: '来源',
+      dataIndex: 'source',
+      width: 100,
+      search: false,
+    },
+    {
+      title: '最近登录',
+      dataIndex: 'lastLoginTime',
+      width: 170,
+      search: false,
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'createTime',
+      width: 170,
+      search: false,
+    },
     {
       title: '操作',
       key: 'action',
       width: 280,
-      fixed: 'right' as const,
-      render: (_, record) => (
+      fixed: 'right',
+      search: false,
+      render: (_, r) => (
         <Space>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => { setCurrent(record); form.setFieldsValue(record); setModalOpen(true) }}>编辑</Button>
-          {record.status === '已启用' && (
-            <Popconfirm title="确定禁用？" onConfirm={() => handleDisable(record)}>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => { setCurrent(r); /* 触发编辑 */ }}>编辑</Button>
+          {r.status === '已启用' && (
+            <Popconfirm title="确定禁用？" onConfirm={() => handleDisable(r)}>
               <Button type="link" size="small" danger>禁用</Button>
             </Popconfirm>
           )}
-          {record.status === '已禁用' && (
-            <Button type="link" size="small" onClick={() => handleEnable(record)}>启用</Button>
+          {r.status === '已禁用' && (
+            <Button type="link" size="small" onClick={() => handleEnable(r)}>启用</Button>
           )}
-          <Button type="link" size="small" icon={<KeyOutlined />} onClick={() => { setCurrent(record); setResetOpen(true) }}>重置密码</Button>
-          <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record)}>
+          <Button type="link" size="small" icon={<KeyOutlined />} onClick={() => { setCurrent(r); setResetOpen(true) }}>重置密码</Button>
+          <Popconfirm title="确定删除？" onConfirm={() => handleDelete(r)}>
             <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
         </Space>
@@ -155,29 +133,10 @@ export default function UserManagement() {
     },
   ]
 
-  const handleSubmit = async (values: UserFormValues) => {
-    try {
-      if (current) {
-        await updateUser({ ...values, id: current.userId })
-        message.success('修改成功')
-      } else {
-        await createUser(values)
-        message.success('创建成功')
-      }
-      setModalOpen(false)
-      form.resetFields()
-      setCurrent(null)
-      loadData()
-    } catch {
-      message.error('操作失败')
-    }
-  }
-
   const handleEnable = async (record: UserListItem) => {
     try {
       await enableUser(record.num!)
       message.success('启用成功')
-      loadData()
     } catch {
       message.error('启用失败')
     }
@@ -187,7 +146,6 @@ export default function UserManagement() {
     try {
       await disableUser(record.num!)
       message.success('禁用成功')
-      loadData()
     } catch {
       message.error('禁用失败')
     }
@@ -197,153 +155,108 @@ export default function UserManagement() {
     try {
       await deleteUser(record.num!)
       message.success('删除成功')
-      loadData()
     } catch {
       message.error('删除失败')
     }
   }
 
-  const handleResetPassword = async (values: { newPassword: string; confirmNewPassword: string }) => {
-    try {
-      await resetUserPassword(current!.num!, values.newPassword)
-      message.success('密码重置成功')
-      setResetOpen(false)
-      resetForm.resetFields()
-    } catch {
-      message.error('密码重置失败')
-    }
-  }
-
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>用户管理</Title>
-        <Space>
-          <Button icon={<UserSwitchOutlined />}>批量操作</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => { setCurrent(null); form.resetFields(); setModalOpen(true) }}>
-            新增用户
-          </Button>
-        </Space>
-      </div>
-
-      {/* 搜索/筛选栏 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        <Col xs={24} sm={10}>
-          <Input.Search
-            placeholder="搜索用户名/姓名"
-            allowClear
-            enterButton={<SearchOutlined />}
-            value={filters.keyword}
-            onChange={(e) => setFilters(f => ({ ...f, keyword: e.target.value }))}
-            onSearch={handleSearch}
-          />
-        </Col>
-        <Col xs={12} sm={5}>
-          <Select
-            style={{ width: '100%' }}
-            placeholder="状态筛选"
-            value={filters.status || undefined}
-            onChange={(v) => handleFilterChange('status', v)}
-            options={USER_STATUS_OPTIONS}
-            allowClear
-          />
-        </Col>
-        <Col xs={12} sm={9} style={{ textAlign: 'right' }}>
-          <Button onClick={handleReset}>重置</Button>
-        </Col>
-      </Row>
-
-      <Table
+    <>
+      <ProTable<UserListItem>
         columns={columns}
-        dataSource={data}
         rowKey="userId"
-        loading={loading}
         scroll={{ x: 1400 }}
+        request={async (params) => {
+          const res = await getUsers({
+            pageNo: params.current ?? 1,
+            pageSize: params.pageSize ?? 10,
+            ...params,
+          } as Record<string, unknown>)
+          const records = (res.data.data?.records as unknown as Record<string, unknown>[]) || []
+          return {
+            data: records.map(toUserListItem),
+            success: true,
+            total: Number(res.data.data?.total || 0),
+          }
+        }}
+        headerTitle="用户管理"
+        toolBarRender={() => [
+          <Button key="batch" icon={<UserSwitchOutlined />}>批量操作</Button>,
+          <Button key="add" type="primary" icon={<PlusOutlined />} onClick={() => { setCurrent(null) }}>
+            新增用户
+          </Button>,
+        ]}
         pagination={{
-          ...pagination,
           showSizeChanger: true,
           showTotal: (t) => `共 ${t} 条`,
-          onChange: (page, size) => { setPagination({ current: page, pageSize: size, total: pagination.total }); loadData() },
         }}
       />
 
-      <Modal
+      <ModalForm
         title={current ? '编辑用户' : '新增用户'}
-        open={modalOpen}
-        onCancel={() => { setModalOpen(false); form.resetFields() }}
-        onOk={() => form.submit()}
+        open={!!current}
+        onOpenChange={(open) => { if (!open) { setCurrent(null) } }}
+        onFinish={async (values: Record<string, unknown>) => {
+          try {
+            if (current?.userId) {
+              await updateUser({ ...values as Record<string, unknown>, id: current.userId } as any)
+              message.success('修改成功')
+            } else {
+              await createUser(values as any)
+              message.success('创建成功')
+            }
+            setCurrent(null)
+            return true
+          } catch {
+            message.error('操作失败')
+            return false
+          }
+        }}
         width={720}
-        destroyOnClose
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="username" label="用户名" rules={[{ required: true, message: '请输入用户名' }]}>
-                <Input placeholder="3-30字符" disabled={!!current} />
-              </Form.Item>
-            </Col>
-            {!current && (
-              <Col span={12}>
-                <Form.Item name="password" label="密码" rules={[{ required: true, message: '请输入密码' }]}>
-                  <Input.Password placeholder="8-32字符" />
-                </Form.Item>
-              </Col>
-            )}
-            <Col span={12}>
-              <Form.Item name="realName" label="姓名" rules={[{ required: true }]}>
-                <Input placeholder="2-50字符" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="email" label="邮箱" rules={[{ required: true, type: 'email' }]}>
-                <Input placeholder="邮箱地址" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="phone" label="手机号">
-                <Input placeholder="11位手机号" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="department" label="部门">
-                <Input placeholder="所属部门" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="status" label="状态" initialValue="已启用">
-                <Select options={[
-                  { label: '已启用', value: '已启用' },
-                  { label: '已禁用', value: '已禁用' },
-                ]} />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Form.Item name="notes" label="备注">
-            <TextArea rows={2} maxLength={500} />
-          </Form.Item>
-        </Form>
-      </Modal>
+        <ProFormText name="username" label="用户名" rules={[{ required: true, message: '请输入用户名' }]} placeholder="3-30字符" disabled={!!current} />
+        {!current && (
+          <ProFormText.Password name="password" label="密码" rules={[{ required: true, message: '请输入密码' }]} placeholder="8-32字符" />
+        )}
+        <ProFormText name="realName" label="姓名" rules={[{ required: true }]} placeholder="2-50字符" />
+        <ProFormText name="email" label="邮箱" rules={[{ required: true, type: 'email' }]} placeholder="邮箱地址" />
+        <ProFormText name="phone" label="手机号" placeholder="11位手机号" />
+        <ProFormText name="department" label="部门" placeholder="所属部门" />
+        <ProFormSelect
+          name="status"
+          label="状态"
+          initialValue="已启用"
+          options={[
+            { label: '已启用', value: '已启用' },
+            { label: '已禁用', value: '已禁用' },
+          ]}
+        />
+        <ProFormTextArea name="notes" label="备注" />
+      </ModalForm>
 
-      <Modal
+      <ModalForm<{ newPassword: string; confirmNewPassword: string }>
         title="重置密码"
         open={resetOpen}
-        onCancel={() => { setResetOpen(false); resetForm.resetFields() }}
-        onOk={() => resetForm.submit()}
+        onOpenChange={setResetOpen}
+        initialValues={resetForm}
+        onFinish={async (values) => {
+          if (values.newPassword !== values.confirmNewPassword) {
+            message.error('两次输入的密码不一致')
+            return false
+          }
+          try {
+            await resetUserPassword(current!.num!, values.newPassword)
+            message.success('密码重置成功')
+            return true
+          } catch {
+            message.error('密码重置失败')
+            return false
+          }
+        }}
       >
-        <Form form={resetForm} layout="vertical" onFinish={handleResetPassword}>
-          <Form.Item name="newPassword" label="新密码" rules={[{ required: true }]}>
-            <Input.Password placeholder="8-32字符" />
-          </Form.Item>
-          <Form.Item name="confirmNewPassword" label="确认密码" dependencies={['newPassword']} rules={[{ required: true }, ({ getFieldValue }) => ({
-            validator(_, value) {
-              if (!value || getFieldValue('newPassword') === value) return Promise.resolve()
-              return Promise.reject(new Error('两次输入的密码不一致'))
-            },
-          })]}>
-            <Input.Password placeholder="再次输入密码" />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
+        <ProFormText.Password name="newPassword" label="新密码" rules={[{ required: true }]} placeholder="8-32字符" />
+        <ProFormText.Password name="confirmNewPassword" label="确认密码" rules={[{ required: true }]} placeholder="再次输入密码" />
+      </ModalForm>
+    </>
   )
 }

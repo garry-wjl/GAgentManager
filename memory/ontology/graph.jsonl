@@ -1,0 +1,33 @@
+{"id": "doc-tech-model-mgmt", "type": "Document", "name": "模型管理-技术方案", "path": "doc/技术方案/2026-05-15_模型管理-技术方案.md", "created": "2026-05-15"}
+{"id": "doc-prd-model-mgmt", "type": "Document", "name": "模型管理-PRD", "path": "doc/产品方案/2026-05-15_模型管理-PRD.md", "created": "2026-05-15"}
+{"id": "prj-gagent-manager", "type": "Project", "name": "GAgentManager"}
+{"id": "task-model-mgmt", "type": "Task", "name": "模型管理实现", "branch": "feature-20260515-model-management", "status": "planned"}
+{"id": "doc-tech-model-mgmt", "relation": "part_of", "target": "prj-gagent-manager"}
+{"id": "doc-prd-model-mgmt", "relation": "part_of", "target": "prj-gagent-manager"}
+{"id": "doc-tech-model-mgmt", "relation": "implements", "target": "doc-prd-model-mgmt"}
+{"id": "task-model-mgmt", "relation": "has_doc", "target": "doc-tech-model-mgmt"}
+{"id": "task-model-mgmt", "relation": "has_doc", "target": "doc-prd-model-mgmt"}
+{"id": "task-model-mgmt", "relation": "part_of", "target": "prj-gagent-manager"}
+{"id": "doc-tech-mcp-mgmt", "type": "Document", "name": "MCP管理-技术方案", "path": "doc/技术方案/2026-05-15_MCP管理-技术方案.md", "created": "2026-05-15"}
+{"id": "doc-prd-mcp-mgmt", "type": "Document", "name": "MCP管理-PRD", "path": "doc/产品方案/2026-05-01_MCP管理-PRD.md", "created": "2026-05-01"}
+{"id": "task-mcp-mgmt", "type": "Task", "name": "MCP管理实现", "branch": "feature-20260515-mcp-management", "status": "planned"}
+{"id": "doc-tech-mcp-mgmt", "relation": "part_of", "target": "prj-gagent-manager"}
+{"id": "doc-prd-mcp-mgmt", "relation": "part_of", "target": "prj-gagent-manager"}
+{"id": "doc-tech-mcp-mgmt", "relation": "implements", "target": "doc-prd-mcp-mgmt"}
+{"id": "task-mcp-mgmt", "relation": "has_doc", "target": "doc-tech-mcp-mgmt"}
+{"id": "task-mcp-mgmt", "relation": "has_doc", "target": "doc-prd-mcp-mgmt"}
+{"id": "task-mcp-mgmt", "relation": "part_of", "target": "prj-gagent-manager"}
+{"id": "doc-prd-user-mgmt", "type": "Document", "name": "用户管理-PRD", "path": "doc/产品方案/2026-05-02_用户管理-PRD.md", "created": "2026-05-02"}
+{"id": "task-user-mgmt", "type": "Task", "name": "用户管理实现", "branch": "feature-20260502-user-management", "status": "planned"}
+{"id": "doc-prd-user-mgmt", "relation": "part_of", "target": "prj-gagent-manager"}
+{"id": "task-user-mgmt", "relation": "has_doc", "target": "doc-prd-user-mgmt"}
+{"id": "task-user-mgmt", "relation": "part_of", "target": "prj-gagent-manager"}
+{"id": "doc-prd-rbac-mgmt", "type": "Document", "name": "权限管理-PRD", "path": "doc/产品方案/2026-05-02_权限管理-PRD.md", "created": "2026-05-02"}
+{"id": "task-rbac-mgmt", "type": "Task", "name": "权限管理实现", "branch": "feature-20260502-rbac-management", "status": "planned"}
+{"id": "doc-prd-rbac-mgmt", "relation": "part_of", "target": "prj-gagent-manager"}
+{"id": "task-rbac-mgmt", "relation": "has_doc", "target": "doc-prd-rbac-mgmt"}
+{"id": "task-rbac-mgmt", "relation": "part_of", "target": "prj-gagent-manager"}
+{"id": "doc-tech-rbac-mgmt", "type": "Document", "name": "权限管理-技术方案", "path": "doc/技术方案/2026-05-02_权限管理-技术方案.md", "created": "2026-05-02"}
+{"id": "doc-tech-rbac-mgmt", "relation": "part_of", "target": "prj-gagent-manager"}
+{"id": "doc-tech-rbac-mgmt", "relation": "implements", "target": "doc-prd-rbac-mgmt"}
+{"id": "task-rbac-mgmt", "relation": "has_doc", "target": "doc-tech-rbac-mgmt"}

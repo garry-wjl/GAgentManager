@@ -47,6 +47,7 @@ export interface AgentFormValues {
   description?: string
   admins: string[]
   systemPrompt?: string
+  userPrompt?: string
   temperature?: number
   maxTokens?: number
   topP?: number
@@ -72,6 +73,7 @@ export interface AgentDetailVO {
   status: string
   version: string
   systemPrompt: string
+  userPrompt: string
   temperature: number
   maxTokens: number
   topP: number
@@ -98,7 +100,58 @@ export interface AgentResourceBinding {
   resourceId: string
   resourceName: string
   isDefault: boolean
+  isEnabled: boolean
+  isAvailable: boolean
   sortOrder: number
   config: string
   createTime: string
+}
+
+/** 绑定模型参数 */
+export interface BindModelParam {
+  modelId: string
+}
+
+/** 绑定工作流/Skill 参数 */
+export interface BindResourceParamV2 {
+  resourceId: string
+  sortOrder?: number
+}
+
+/** 更新资源绑定排序参数 */
+export interface UpdateBindingSortParam {
+  bindings: BindingSortItem[]
+}
+
+export interface BindingSortItem {
+  bindingNum: string
+  sortOrder: number
+}
+
+/** 已启用模型视图对象 */
+export interface EnabledModelVO {
+  id: string
+  num: string
+  modelCode: string
+  modelName: string
+  provider: string
+  status: string
+}
+
+/** 工作流选项 */
+export interface WorkflowOption {
+  id: string
+  num: string
+  workflowName: string
+  status: string
+  description: string
+}
+
+/** Skill 选项 */
+export interface SkillOption {
+  id: string
+  num: string
+  skillName: string
+  status: string
+  description: string
 }

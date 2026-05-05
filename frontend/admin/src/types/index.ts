@@ -1,6 +1,6 @@
 export type { ApiResponse, PageResult, PageParams, SortParams } from './api'
 export type { UserInfo, UserListItem, UserFormValues, UserStatus, UserSource } from './user'
-export type { AgentItem, AgentFormValues, AgentVersionItem, AgentType, AgentStatus, VersionTag, AgentDetailVO, AgentResourceBinding } from './agent'
+export type { AgentItem, AgentFormValues, AgentVersionItem, AgentType, AgentStatus, VersionTag, AgentDetailVO, AgentResourceBinding, BindModelParam, BindResourceParamV2, UpdateBindingSortParam, BindingSortItem, EnabledModelVO, WorkflowOption, SkillOption } from './agent'
 export type { RoleItem, PermissionResource, PermissionAction, RolePermission, UserRoleAssignment, UserPermissionResult } from './permission'
 export type { SkillItem, SkillVersion, SkillCategory, SkillStatus } from './skill'
 export type { MCPItem, MCPVersion, MCPFormValues, MCPStatus } from './mcp'

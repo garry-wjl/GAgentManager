@@ -1,19 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import {
-  Card, Descriptions, Form, Input, Select, Button, Space, Tag, Tabs,
-  Table, message, Typography, Row, Col, InputNumber, Divider, Popconfirm, Tooltip,
-} from 'antd'
-import {
-  ArrowLeftOutlined, EditOutlined, SaveOutlined, DeleteOutlined,
-  RollbackOutlined, LinkOutlined,
-} from '@ant-design/icons'
-import type { ColumnsType } from 'antd/es/table'
-import { getAgentDetail, updateAgent, deleteAgent, getAgentVersions, getAgentBindings, unbindResource, rollbackAgent } from '../../api/agent'
-import type { AgentDetailVO, AgentResourceBinding, AgentVersionItem } from '../../types'
-
-const { TextArea } = Input
-const { Title, Text } = Typography
+import { Button, Space, Tag, message, Popconfirm } from 'antd'
+import { ArrowLeftOutlined, EditOutlined, SaveOutlined, DeleteOutlined, RollbackOutlined, PlusOutlined } from '@ant-design/icons'
+import { ProCard, ProForm, ProFormText, ProFormSelect, ProFormDigit, ProFormTextArea, ProDescriptions, ProTable } from '@ant-design/pro-components'
+import type { ProColumns, ProFormInstance } from '@ant-design/pro-components'
+import { getAgentDetail, updateAgent, deleteAgent, getAgentVersions, getAgentBindings, unbindResource, rollbackAgent, bindModel, getEnabledModels, bindWorkflow, unbindWorkflow, toggleWorkflow, bindSkill, getAgentBindingsByType } from '../../api/agent'
+import type { AgentDetailVO, AgentResourceBinding, AgentVersionItem, EnabledModelVO } from '../../types'
 
 const AGENT_TYPE_OPTIONS = [
   { label: '聊天型', value: '聊天型' },
@@ -47,7 +39,6 @@ const tagColorMap: Record<string, string> = {
   '已废弃': 'error',
 }
 
-/** 将后端 AgentVO 转换为前端 AgentDetailVO */
 function toAgentDetailVO(vo: Record<string, unknown>): AgentDetailVO {
   return {
     id: String(vo.id || ''),
@@ -61,6 +52,7 @@ function toAgentDetailVO(vo: Record<string, unknown>): AgentDetailVO {
     status: String(vo.status || ''),
     version: String(vo.version || ''),
     systemPrompt: String(vo.systemPrompt || ''),
+    userPrompt: String(vo.userPrompt || ''),
     temperature: Number(vo.temperature ?? 1),
     maxTokens: Number(vo.maxTokens ?? 4096),
     topP: Number(vo.topP ?? 1),
@@ -79,7 +71,6 @@ function toAgentDetailVO(vo: Record<string, unknown>): AgentDetailVO {
   }
 }
 
-/** 将后端 AgentVersionVO 转换为前端 AgentVersionItem */
 function toAgentVersionItem(vo: Record<string, unknown>): AgentVersionItem {
   return {
     versionId: String(vo.num || ''),
@@ -99,7 +90,6 @@ function toAgentVersionItem(vo: Record<string, unknown>): AgentVersionItem {
   }
 }
 
-/** 将后端 AgentResourceBindingVO 转换为前端 AgentResourceBinding */
 function toAgentResourceBinding(vo: Record<string, unknown>): AgentResourceBinding {
   return {
     id: String(vo.id || ''),
@@ -109,6 +99,8 @@ function toAgentResourceBinding(vo: Record<string, unknown>): AgentResourceBindi
     resourceId: String(vo.resourceId || ''),
     resourceName: String(vo.resourceName || ''),
     isDefault: Boolean(vo.isDefault),
+    isEnabled: Boolean(vo.isEnabled ?? true),
+    isAvailable: Boolean(vo.isAvailable ?? true),
     sortOrder: Number(vo.sortOrder || 0),
     config: String(vo.config || ''),
     createTime: String(vo.createTime || ''),
@@ -124,13 +116,12 @@ export default function AgentDetail() {
   const [saving, setSaving] = useState(false)
   const [detail, setDetail] = useState<AgentDetailVO | null>(null)
   const [editing, setEditing] = useState(false)
-  const [form] = Form.useForm()
+  const formRef = useRef<ProFormInstance>()
 
   // Tab state
   const [versions, setVersions] = useState<AgentVersionItem[]>([])
   const [bindings, setBindings] = useState<AgentResourceBinding[]>([])
-  const [versionsLoading, setVersionsLoading] = useState(false)
-  const [bindingsLoading, setBindingsLoading] = useState(false)
+  const [enabledModels, setEnabledModels] = useState<EnabledModelVO[]>([])
 
   useEffect(() => {
     if (!isNew && num) {
@@ -139,8 +130,8 @@ export default function AgentDetail() {
       loadBindings()
     } else if (isNew) {
       setEditing(true)
-      form.resetFields()
     }
+    loadEnabledModels()
   }, [num, isNew])
 
   const loadDetail = async () => {
@@ -149,8 +140,7 @@ export default function AgentDetail() {
     try {
       const res = await getAgentDetail(num)
       const vo = res.data.data as unknown as Record<string, unknown>
-      const data = toAgentDetailVO(vo)
-      setDetail(data)
+      setDetail(toAgentDetailVO(vo))
     } catch {
       message.error('加载 Agent 详情失败')
     } finally {
@@ -160,51 +150,35 @@ export default function AgentDetail() {
 
   const loadVersions = async () => {
     if (!detail?.id) return
-    setVersionsLoading(true)
     try {
       const res = await getAgentVersions(detail.id)
       const records = (res.data.data as unknown as Record<string, unknown>[]) || []
       setVersions(records.map(toAgentVersionItem))
-    } catch {
-      // 静默
-    } finally {
-      setVersionsLoading(false)
-    }
+    } catch { /* 静默 */ }
   }
 
   const loadBindings = async () => {
     if (!detail?.id) return
-    setBindingsLoading(true)
     try {
       const res = await getAgentBindings(detail.id)
       const records = (res.data.data as unknown as Record<string, unknown>[]) || []
       setBindings(records.map(toAgentResourceBinding))
-    } catch {
-      // 静默
-    } finally {
-      setBindingsLoading(false)
-    }
+    } catch { /* 静默 */ }
   }
 
-  const handleEdit = () => {
-    if (!detail) return
-    form.setFieldsValue({
-      agentName: detail.agentName,
-      agentType: detail.agentType,
-      description: detail.description,
-      systemPrompt: detail.systemPrompt,
-      temperature: detail.temperature,
-      maxTokens: detail.maxTokens,
-      topP: detail.topP,
-      topK: detail.topK || undefined,
-      frequencyPenalty: detail.frequencyPenalty || undefined,
-      presencePenalty: detail.presencePenalty || undefined,
-      responseFormat: detail.responseFormat || undefined,
-      timeoutSeconds: detail.timeoutSeconds,
-      retryCount: detail.retryCount,
-      admins: detail.admins.join(','),
-    })
-    setEditing(true)
+  const loadEnabledModels = async () => {
+    try {
+      const res = await getEnabledModels()
+      const records = (res.data.data as unknown as Record<string, unknown>[]) || []
+      setEnabledModels(records.map((m: Record<string, unknown>) => ({
+        id: String(m.id || ''),
+        num: String(m.num || ''),
+        modelCode: String(m.modelCode || ''),
+        modelName: String(m.modelName || ''),
+        provider: String(m.provider || ''),
+        status: String(m.status || ''),
+      })))
+    } catch { /* 静默 */ }
   }
 
   const handleSave = async (values: Record<string, unknown>) => {
@@ -218,6 +192,7 @@ export default function AgentDetail() {
         description: String(values.description || ''),
         admins: [],
         systemPrompt: String(values.systemPrompt || ''),
+        userPrompt: String(values.userPrompt || ''),
         temperature: Number(values.temperature),
         maxTokens: Number(values.maxTokens),
         topP: Number(values.topP),
@@ -228,19 +203,18 @@ export default function AgentDetail() {
         timeoutSeconds: values.timeoutSeconds ? Number(values.timeoutSeconds) : undefined,
         retryCount: values.retryCount ? Number(values.retryCount) : undefined,
       })
+      if (values.boundModelId && detail.num) {
+        await bindModel(detail.num, { modelId: String(values.boundModelId) })
+      }
       message.success('保存成功')
       setEditing(false)
       loadDetail()
+      loadBindings()
     } catch {
       message.error('保存失败')
     } finally {
       setSaving(false)
     }
-  }
-
-  const handleCancel = () => {
-    setEditing(false)
-    form.resetFields()
   }
 
   const handleDelete = async () => {
@@ -276,20 +250,29 @@ export default function AgentDetail() {
     }
   }
 
-  // 页面标题
+  const handleToggleWorkflow = async (bindingNum: string) => {
+    try {
+      await toggleWorkflow(bindingNum)
+      message.success('切换成功')
+      loadBindings()
+    } catch {
+      message.error('切换失败')
+    }
+  }
+
   const pageTitle = isNew ? '新增 Agent' : (editing ? '编辑 Agent' : 'Agent 详情')
 
-  // 版本历史列
-  const versionColumns: ColumnsType<AgentVersionItem> = [
-    { title: '版本号', dataIndex: 'version', width: 100, render: (v, r) => r.isCurrentVersion ? <Tag color="blue">{v}</Tag> : v },
-    { title: '标签', dataIndex: 'versionTag', width: 100, render: (v) => <Tag color={tagColorMap[v] || 'default'}>{v}</Tag> },
-    { title: '变更日志', dataIndex: 'changelog', ellipsis: true },
-    { title: '发布人', dataIndex: 'creator', width: 100 },
-    { title: '发布时间', dataIndex: 'publishTime', width: 170 },
+  const versionColumns: ProColumns<AgentVersionItem>[] = [
+    { title: '版本号', dataIndex: 'version', width: 100, render: (_, r) => r.isCurrentVersion ? <Tag color="blue">{r.version}</Tag> : r.version },
+    { title: '标签', dataIndex: 'versionTag', width: 100, render: (v) => <Tag color={tagColorMap[v as string] || 'default'}>{v}</Tag> },
+    { title: '变更日志', dataIndex: 'changelog', ellipsis: true, search: false },
+    { title: '发布人', dataIndex: 'creator', width: 100, search: false },
+    { title: '发布时间', dataIndex: 'publishTime', width: 170, search: false },
     {
       title: '操作',
       key: 'action',
       width: 100,
+      search: false,
       render: (_, r) => !r.isCurrentVersion && r.rollbackAvailable ? (
         <Popconfirm title="确定回滚到此版本？" onConfirm={() => handleRollback(r.versionId)}>
           <Button type="link" size="small" icon={<RollbackOutlined />}>回滚</Button>
@@ -298,196 +281,182 @@ export default function AgentDetail() {
     },
   ]
 
-  // 资源绑定列
-  const bindingColumns: ColumnsType<AgentResourceBinding> = [
-    { title: '资源类型', dataIndex: 'resourceType', width: 100, render: (v) => <Tag>{v}</Tag> },
-    { title: '资源名称', dataIndex: 'resourceName' },
-    { title: '默认', dataIndex: 'isDefault', width: 80, render: (v) => v ? <Tag color="green">是</Tag> : <Tag>否</Tag> },
-    { title: '排序', dataIndex: 'sortOrder', width: 80 },
-    { title: '绑定时间', dataIndex: 'createTime', width: 170 },
+  const bindingColumns: ProColumns<AgentResourceBinding>[] = [
+    { title: '资源类型', dataIndex: 'resourceType', width: 100, search: false },
+    { title: '资源名称', dataIndex: 'resourceName', search: false },
+    { title: '默认', dataIndex: 'isDefault', width: 80, search: false, render: (v) => v ? <Tag color="green">是</Tag> : <Tag>否</Tag> },
+    {
+      title: '状态',
+      dataIndex: 'isAvailable',
+      width: 150,
+      search: false,
+      render: (_, r) => (
+        <Space>
+          <Tag color={r.isAvailable ? 'green' : 'red'}>{r.isAvailable ? '可用' : '不可用'}</Tag>
+          {r.resourceType === 'WORKFLOW' && (
+            <Tag color={r.isEnabled ? 'blue' : 'default'}>{r.isEnabled ? '启用' : '停用'}</Tag>
+          )}
+        </Space>
+      ),
+    },
+    { title: '排序', dataIndex: 'sortOrder', width: 80, search: false },
+    { title: '绑定时间', dataIndex: 'createTime', width: 170, search: false },
     {
       title: '操作',
       key: 'action',
       width: 100,
-      render: (_, r) => (
-        <Popconfirm title="确定解绑？" onConfirm={() => handleUnbind(r.num)}>
-          <Button type="link" size="small" danger icon={<LinkOutlined />}>解绑</Button>
-        </Popconfirm>
-      ),
-    },
-  ]
-
-  const tabItems = [
-    {
-      key: 'versions',
-      label: '版本历史',
-      children: (
-        <Table
-          columns={versionColumns}
-          dataSource={versions}
-          rowKey="versionId"
-          loading={versionsLoading}
-          size="small"
-          locale={{ emptyText: '暂无版本记录' }}
-          pagination={false}
-        />
-      ),
-    },
-    {
-      key: 'bindings',
-      label: '资源绑定',
-      children: (
-        <Table
-          columns={bindingColumns}
-          dataSource={bindings}
-          rowKey="num"
-          loading={bindingsLoading}
-          size="small"
-          locale={{ emptyText: '暂无绑定资源' }}
-          pagination={false}
-        />
-      ),
+      search: false,
+      render: (_, r) => r.resourceType !== 'MODEL' ? (
+        <Space>
+          {r.resourceType === 'WORKFLOW' && (
+            <Button type="link" size="small" onClick={() => handleToggleWorkflow(r.num)}>{r.isEnabled ? '停用' : '启用'}</Button>
+          )}
+          <Popconfirm title="确定解绑？" onConfirm={() => handleUnbind(r.num)}>
+            <Button type="link" size="small" danger>解绑</Button>
+          </Popconfirm>
+        </Space>
+      ) : null,
     },
   ]
 
   return (
     <div>
       {/* 顶部导航栏 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <ProCard
+        style={{ marginBottom: 16 }}
+        extra={
+          <Space>
+            {!isNew && !editing && (
+              <Button type="primary" icon={<EditOutlined />} onClick={() => setEditing(true)}>编辑</Button>
+            )}
+            {editing && (
+              <>
+                <Button icon={<SaveOutlined />} loading={saving} onClick={() => formRef.current?.submit()}>保存</Button>
+                <Button onClick={() => setEditing(false)}>取消</Button>
+              </>
+            )}
+            {!isNew && (
+              <Popconfirm title="确定删除此 Agent？" onConfirm={handleDelete}>
+                <Button danger icon={<DeleteOutlined />}>删除</Button>
+              </Popconfirm>
+            )}
+            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/agents')}>返回列表</Button>
+          </Space>
+        }
+      >
         <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/agents')}>返回列表</Button>
-          <Title level={4} style={{ margin: 0 }}>{pageTitle}</Title>
+          <h2 style={{ margin: 0 }}>{pageTitle}</h2>
           {detail && <Tag color={statusColorMap[detail.status] || 'default'}>{detail.status}</Tag>}
           {detail && <Tag>{detail.version}</Tag>}
         </Space>
-        {!isNew && (
-          <Space>
-            {!editing ? (
-              <Button type="primary" icon={<EditOutlined />} onClick={handleEdit}>编辑</Button>
-            ) : (
-              <>
-                <Button icon={<SaveOutlined />} loading={saving} onClick={() => form.submit()}>保存</Button>
-                <Button onClick={handleCancel}>取消</Button>
-              </>
-            )}
-            <Popconfirm title="确定删除此 Agent？" onConfirm={handleDelete}>
-              <Button danger icon={<DeleteOutlined />}>删除</Button>
-            </Popconfirm>
-          </Space>
-        )}
-      </div>
+      </ProCard>
 
       {/* 基本信息 */}
-      <Card loading={loading} style={{ marginBottom: 16 }}>
-        {!editing && detail ? (
-          <Descriptions column={2} bordered>
-            <Descriptions.Item label="Agent 名称">{detail.agentName}</Descriptions.Item>
-            <Descriptions.Item label="类型"><Tag>{detail.agentType}</Tag></Descriptions.Item>
-            <Descriptions.Item label="Agent 编码">{detail.agentCode || '-'}</Descriptions.Item>
-            <Descriptions.Item label="状态">
-              <Tag color={statusColorMap[detail.status] || 'default'}>{detail.status}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="描述" span={2}>{detail.description || '-'}</Descriptions.Item>
-            <Descriptions.Item label="系统提示词" span={2}>
-              <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'inherit' }}>{detail.systemPrompt || '-'}</pre>
-            </Descriptions.Item>
-            <Descriptions.Item label="Temperature">{detail.temperature}</Descriptions.Item>
-            <Descriptions.Item label="Max Tokens">{detail.maxTokens}</Descriptions.Item>
-            <Descriptions.Item label="Top P">{detail.topP}</Descriptions.Item>
-            <Descriptions.Item label="Top K">{detail.topK || '-'}</Descriptions.Item>
-            <Descriptions.Item label="Frequency Penalty">{detail.frequencyPenalty || '-'}</Descriptions.Item>
-            <Descriptions.Item label="Presence Penalty">{detail.presencePenalty || '-'}</Descriptions.Item>
-            <Descriptions.Item label="Response Format">{detail.responseFormat || '-'}</Descriptions.Item>
-            <Descriptions.Item label="超时时间(秒)">{detail.timeoutSeconds}</Descriptions.Item>
-            <Descriptions.Item label="重试次数">{detail.retryCount}</Descriptions.Item>
-            <Descriptions.Item label="Stop Sequences">{detail.stopSequences || '-'}</Descriptions.Item>
-            <Descriptions.Item label="管理员" span={2}>{detail.admins.join(', ') || '-'}</Descriptions.Item>
-            <Descriptions.Item label="创建人">{detail.createNo}</Descriptions.Item>
-            <Descriptions.Item label="创建时间">{detail.createTime}</Descriptions.Item>
-            <Descriptions.Item label="更新人">{detail.updateNo}</Descriptions.Item>
-            <Descriptions.Item label="更新时间">{detail.updateTime}</Descriptions.Item>
-          </Descriptions>
-        ) : (
-          <Form form={form} layout="vertical" onFinish={handleSave} initialValues={{ temperature: 1, maxTokens: 4096, topP: 1, timeoutSeconds: 30, retryCount: 3 }}>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item name="agentName" label="Agent 名称" rules={[{ required: true, message: '请输入名称' }]}>
-                  <Input placeholder="2-50字符" />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item name="agentType" label="类型" rules={[{ required: true, message: '请选择类型' }]}>
-                  <Select options={AGENT_TYPE_OPTIONS} />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Form.Item name="description" label="描述">
-              <TextArea rows={2} maxLength={500} />
-            </Form.Item>
-            <Form.Item name="systemPrompt" label="系统提示词">
-              <TextArea rows={6} maxLength={5000} />
-            </Form.Item>
-            <Divider orientation="left" style={{ margin: '16px 0' }}>模型参数</Divider>
-            <Row gutter={16}>
-              <Col span={8}>
-                <Form.Item name="temperature" label="Temperature">
-                  <InputNumber min={0} max={2} step={0.1} style={{ width: '100%' }} />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item name="maxTokens" label="Max Tokens">
-                  <InputNumber min={1} max={128000} style={{ width: '100%' }} />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item name="topP" label="Top P">
-                  <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Row gutter={16}>
-              <Col span={8}>
-                <Form.Item name="topK" label="Top K">
-                  <InputNumber min={0} style={{ width: '100%' }} />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item name="frequencyPenalty" label="Frequency Penalty">
-                  <InputNumber min={-2} max={2} step={0.1} style={{ width: '100%' }} />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item name="presencePenalty" label="Presence Penalty">
-                  <InputNumber min={-2} max={2} step={0.1} style={{ width: '100%' }} />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Row gutter={16}>
-              <Col span={8}>
-                <Form.Item name="responseFormat" label="Response Format">
-                  <Select options={RESPONSE_FORMAT_OPTIONS} allowClear />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item name="timeoutSeconds" label="超时时间(秒)">
-                  <InputNumber min={5} max={300} style={{ width: '100%' }} />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item name="retryCount" label="重试次数">
-                  <InputNumber min={0} max={10} style={{ width: '100%' }} />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Form.Item name="admins" label="管理员（逗号分隔）">
-              <Input placeholder="admin1, admin2" />
-            </Form.Item>
-          </Form>
-        )}
-      </Card>
+      {!editing && detail ? (
+        <ProDescriptions column={2} loading={loading} title="基本信息">
+          <ProDescriptions.Item label="Agent 名称">{detail.agentName}</ProDescriptions.Item>
+          <ProDescriptions.Item label="类型"><Tag>{detail.agentType}</Tag></ProDescriptions.Item>
+          <ProDescriptions.Item label="Agent 编码">{detail.agentCode || '-'}</ProDescriptions.Item>
+          <ProDescriptions.Item label="状态">
+            <Tag color={statusColorMap[detail.status] || 'default'}>{detail.status}</Tag>
+          </ProDescriptions.Item>
+          <ProDescriptions.Item label="描述" span={2}>{detail.description || '-'}</ProDescriptions.Item>
+          <ProDescriptions.Item label="系统提示词" span={2}>
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'inherit' }}>{detail.systemPrompt || '-'}</pre>
+          </ProDescriptions.Item>
+          <ProDescriptions.Item label="用户提示词" span={2}>
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'inherit' }}>{detail.userPrompt || '-'}</pre>
+          </ProDescriptions.Item>
+          <ProDescriptions.Item label="Temperature">{detail.temperature}</ProDescriptions.Item>
+          <ProDescriptions.Item label="Max Tokens">{detail.maxTokens}</ProDescriptions.Item>
+          <ProDescriptions.Item label="Top P">{detail.topP}</ProDescriptions.Item>
+          <ProDescriptions.Item label="Top K">{detail.topK || '-'}</ProDescriptions.Item>
+          <ProDescriptions.Item label="Frequency Penalty">{detail.frequencyPenalty || '-'}</ProDescriptions.Item>
+          <ProDescriptions.Item label="Presence Penalty">{detail.presencePenalty || '-'}</ProDescriptions.Item>
+          <ProDescriptions.Item label="Response Format">{detail.responseFormat || '-'}</ProDescriptions.Item>
+          <ProDescriptions.Item label="超时时间(秒)">{detail.timeoutSeconds}</ProDescriptions.Item>
+          <ProDescriptions.Item label="重试次数">{detail.retryCount}</ProDescriptions.Item>
+          <ProDescriptions.Item label="管理员" span={2}>{detail.admins.join(', ') || '-'}</ProDescriptions.Item>
+          <ProDescriptions.Item label="创建人">{detail.createNo}</ProDescriptions.Item>
+          <ProDescriptions.Item label="创建时间">{detail.createTime}</ProDescriptions.Item>
+          <ProDescriptions.Item label="更新人">{detail.updateNo}</ProDescriptions.Item>
+          <ProDescriptions.Item label="更新时间">{detail.updateTime}</ProDescriptions.Item>
+        </ProDescriptions>
+      ) : (
+        <ProCard loading={loading} title={isNew ? '新增 Agent' : '编辑 Agent'}>
+          <ProForm
+            formRef={formRef}
+            layout="vertical"
+            onFinish={handleSave}
+            initialValues={{ temperature: 1, maxTokens: 4096, topP: 1, timeoutSeconds: 30, retryCount: 3 }}
+            submitter={false}
+          >
+            <ProFormText name="agentName" label="Agent 名称" rules={[{ required: true, message: '请输入名称' }]} />
+            <ProFormSelect name="agentType" label="类型" rules={[{ required: true, message: '请选择类型' }]} options={AGENT_TYPE_OPTIONS} />
+            <ProFormTextArea name="description" label="描述" fieldProps={{ rows: 2, maxLength: 500 }} />
+            <ProFormTextArea name="systemPrompt" label="系统提示词" fieldProps={{ rows: 6, maxLength: 5000 }} />
+            <ProFormTextArea name="userPrompt" label="用户提示词（预设输入模板）" fieldProps={{ rows: 4, maxLength: 5000, placeholder: '可选，定义用户输入的预设模板格式' }} />
+
+            <ProCard title="模型参数" style={{ marginTop: 16 }}>
+              <ProFormDigit name="temperature" label="Temperature" min={0} max={2} fieldProps={{ step: 0.1 }} />
+              <ProFormDigit name="maxTokens" label="Max Tokens" min={1} max={128000} />
+              <ProFormDigit name="topP" label="Top P" min={0} max={1} fieldProps={{ step: 0.1 }} />
+              <ProFormDigit name="topK" label="Top K" min={0} />
+              <ProFormDigit name="frequencyPenalty" label="Frequency Penalty" min={-2} max={2} fieldProps={{ step: 0.1 }} />
+              <ProFormDigit name="presencePenalty" label="Presence Penalty" min={-2} max={2} fieldProps={{ step: 0.1 }} />
+              <ProFormSelect name="responseFormat" label="Response Format" options={RESPONSE_FORMAT_OPTIONS} />
+              <ProFormDigit name="timeoutSeconds" label="超时时间(秒)" min={5} max={300} />
+              <ProFormDigit name="retryCount" label="重试次数" min={0} max={10} />
+            </ProCard>
+
+            <ProFormText name="admins" label="管理员（逗号分隔）" placeholder="admin1, admin2" />
+
+            <ProFormSelect
+              name="boundModelId"
+              label="绑定模型"
+              tooltip="发布前必须绑定一个已启用的模型"
+              options={enabledModels.map(m => ({ label: `${m.modelName} (${m.provider})`, value: m.id }))}
+              allowClear
+            />
+          </ProForm>
+        </ProCard>
+      )}
 
       {/* Tabs */}
-      {!isNew && <Tabs items={tabItems} />}
+      {!isNew && !editing && (
+        <ProCard style={{ marginTop: 16 }} tabs={{ items: [
+          {
+            key: 'versions',
+            label: '版本历史',
+            children: (
+              <ProTable<AgentVersionItem>
+                columns={versionColumns}
+                rowKey="versionId"
+                dataSource={versions}
+                search={false}
+                pagination={false}
+                options={false}
+                locale={{ emptyText: '暂无版本记录' }}
+              />
+            ),
+          },
+          {
+            key: 'bindings',
+            label: '资源绑定',
+            children: (
+              <ProTable<AgentResourceBinding>
+                columns={bindingColumns}
+                rowKey="num"
+                dataSource={bindings}
+                search={false}
+                pagination={false}
+                options={false}
+                locale={{ emptyText: '暂无绑定资源' }}
+              />
+            ),
+          },
+        ]}} />
+      )}
     </div>
   )
 }
