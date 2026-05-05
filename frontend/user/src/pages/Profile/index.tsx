@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react'
 import {
-  Card, Tabs, Form, Input, Button, message, Table, Typography, Tag,
+  Card, Tabs, Form, Input, Button, message, Table, Typography, Tag, Space,
 } from 'antd'
-import { UserOutlined, LockOutlined, HistoryOutlined } from '@ant-design/icons'
+import { UserOutlined, LockOutlined, HistoryOutlined, MonitorOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import { getProfile, updateProfile, changePassword, getInteractionHistory } from '../../api/profile'
+import { getProfile, updateProfile, changePassword } from '../../api/profile'
+import { listSessionsWithPage } from '../../api/chat'
+import { listDevices, kickOutDevice } from '../../api/device'
 import type { ApiResponse, PageResult } from '../../types/api'
 import type { UserProfile, ChangePasswordParams } from '../../types/user'
 import type { SessionVO } from '../../types/session'
+import type { UserDeviceVO } from '../../types/device'
+import dayjs from 'dayjs'
 
 const { Title } = Typography
 
@@ -17,10 +21,14 @@ export default function Profile() {
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [history, setHistory] = useState<SessionVO[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyTotal, setHistoryTotal] = useState(0)
+  const [devices, setDevices] = useState<UserDeviceVO[]>([])
+  const [deviceLoading, setDeviceLoading] = useState(false)
 
   useEffect(() => {
     loadProfile()
     loadHistory()
+    loadDevices()
   }, [])
 
   const loadProfile = async () => {
@@ -29,21 +37,34 @@ export default function Profile() {
       const res = await getProfile() as ApiResponse<UserProfile>
       setProfile(res.data)
     } catch {
-      setProfile({ nickName: '用户', phone: '138****1234', email: 'user@example.com' })
+      // Silent - will show empty form
     } finally {
       setProfileLoading(false)
     }
   }
 
-  const loadHistory = async () => {
+  const loadHistory = async (page = 1) => {
     setHistoryLoading(true)
     try {
-      const res = await getInteractionHistory() as ApiResponse<PageResult<SessionVO>>
-      setHistory(res.data.records)
+      const res = await listSessionsWithPage(page, 10) as ApiResponse<PageResult<SessionVO>>
+      setHistory(res.data?.records || [])
+      setHistoryTotal(res.data?.total || 0)
     } catch {
       setHistory([])
     } finally {
       setHistoryLoading(false)
+    }
+  }
+
+  const loadDevices = async () => {
+    setDeviceLoading(true)
+    try {
+      const res = await listDevices() as ApiResponse<UserDeviceVO[]>
+      setDevices(res.data || [])
+    } catch {
+      setDevices([])
+    } finally {
+      setDeviceLoading(false)
     }
   }
 
@@ -54,7 +75,6 @@ export default function Profile() {
       setProfile(values)
     } catch {
       message.success('个人信息更新成功')
-      setProfile(values)
     }
   }
 
@@ -74,12 +94,44 @@ export default function Profile() {
     }
   }
 
+  const handleKickOut = async (device: UserDeviceVO) => {
+    try {
+      await kickOutDevice({ deviceNum: device.num })
+      message.success('设备已强制下线')
+      loadDevices()
+    } catch {
+      message.error('操作失败')
+    }
+  }
+
   const historyColumns: ColumnsType<SessionVO> = [
     { title: '会话标题', dataIndex: 'sessionTitle', ellipsis: true },
-    { title: 'Agent', dataIndex: 'agentName', width: 120 },
     { title: '消息数', dataIndex: 'messageCount', width: 80 },
-    { title: '开始时间', dataIndex: 'createTime', width: 170 },
-    { title: '状态', dataIndex: 'isActive', width: 80, render: (v) => v ? <Tag color="green">活跃</Tag> : <Tag>已结束</Tag> },
+    { title: '最后消息时间', dataIndex: 'lastMessageTime', width: 170, render: (v) => v ? dayjs(v).format('YYYY-MM-DD HH:mm') : '-' },
+  ]
+
+  const deviceColumns: ColumnsType<UserDeviceVO> = [
+    { title: '设备名称', dataIndex: 'deviceName' },
+    { title: 'IP 地址', dataIndex: 'ipAddress', width: 150 },
+    { title: '登录时间', dataIndex: 'loginTime', width: 170, render: (v) => dayjs(v).format('YYYY-MM-DD HH:mm') },
+    { title: '最后活跃', dataIndex: 'lastActiveTime', width: 170, render: (v) => dayjs(v).format('YYYY-MM-DD HH:mm') },
+    {
+      title: '状态',
+      dataIndex: 'isOnline',
+      width: 80,
+      render: (v) => v ? <Tag color="green">在线</Tag> : <Tag>离线</Tag>,
+    },
+    {
+      title: '操作',
+      width: 100,
+      render: (_, record) => (
+        record.isOnline ? (
+          <Button size="small" danger onClick={() => handleKickOut(record)}>
+            强制下线
+          </Button>
+        ) : '-'
+      ),
+    },
   ]
 
   const items = [
@@ -144,15 +196,30 @@ export default function Profile() {
     },
     {
       key: 'history',
-      label: '交互历史',
+      label: '历史对话',
       icon: <HistoryOutlined />,
       children: (
         <Table
           columns={historyColumns}
           dataSource={history}
-          rowKey="sessionId"
+          rowKey="num"
           loading={historyLoading}
-          pagination={{ pageSize: 10, showTotal: (t) => `共 ${t} 条` }}
+          pagination={{ pageSize: 10, total: historyTotal, showTotal: (t) => `共 ${t} 条` }}
+          onChange={(pagination) => loadHistory(pagination.current || 1)}
+        />
+      ),
+    },
+    {
+      key: 'devices',
+      label: '设备管理',
+      icon: <MonitorOutlined />,
+      children: (
+        <Table
+          columns={deviceColumns}
+          dataSource={devices}
+          rowKey="num"
+          loading={deviceLoading}
+          pagination={false}
         />
       ),
     },

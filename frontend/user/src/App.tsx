@@ -5,12 +5,14 @@ import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import Chat from './pages/Chat'
 import Profile from './pages/Profile'
+import Share from './pages/Share'
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/share/:shareToken" element={<Share />} />
       <Route
         path="/"
         element={

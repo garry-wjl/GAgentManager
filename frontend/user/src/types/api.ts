@@ -7,11 +7,11 @@ export interface ApiResponse<T = unknown> {
 export interface PageResult<T> {
   records: T[]
   total: number
-  current: number
+  pageNo: number
   pageSize: number
 }
 
 export interface PageParams {
-  current?: number
+  pageNo?: number
   pageSize?: number
 }

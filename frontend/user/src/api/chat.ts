@@ -1,45 +1,91 @@
-import { get, post, put, del } from './request'
+import { get, post } from './request'
 import type { ApiResponse, PageResult } from '../types/api'
-import type { SessionVO, CreateSessionParams, UpdateSessionParams } from '../types/session'
-import type { MessageVO } from '../types/chat'
+import type { SessionVO, CreateSessionParams } from '../types/session'
+import type { MessageVO, FileInfoVO, SendMessageParams, MarkdownExportVO } from '../types/chat'
+import type { ShareResultVO, ShareContentVO } from '../types/share'
 
-export function getSessions(params?: { agentId?: string }) {
-  return get<ApiResponse<SessionVO[]>>('/chat/sessions', { params })
+// ==================== Session Query ====================
+
+export function listSessions() {
+  return get<ApiResponse<SessionVO[]>>('/chat/query/session/list')
 }
+
+export function listSessionsByAgent(agentId: number) {
+  return get<ApiResponse<SessionVO[]>>('/chat/query/session/agent-list', { params: { agentId } })
+}
+
+export function listSessionsWithPage(pageNo = 1, pageSize = 20) {
+  return get<ApiResponse<PageResult<SessionVO>>>('/chat/query/session/list-page', {
+    params: { pageNo, pageSize },
+  })
+}
+
+export function listSessionAttachments(sessionId: number) {
+  return get<ApiResponse<FileInfoVO[]>>('/chat/query/session/attachments', { params: { sessionId } })
+}
+
+export function exportSessionMarkdown(sessionNum: string) {
+  return get<ApiResponse<MarkdownExportVO>>('/chat/query/session/export-markdown', {
+    params: { sessionNum },
+  })
+}
+
+// ==================== Message Query ====================
+
+export function listMessages(sessionId: number, pageNo = 1, pageSize = 50) {
+  return get<ApiResponse<PageResult<MessageVO>>>('/chat/query/message/list', {
+    params: { sessionId, pageNo, pageSize },
+  })
+}
+
+// ==================== Session Command ====================
 
 export function createSession(data: CreateSessionParams) {
-  return post<ApiResponse<SessionVO>>('/chat/sessions', data)
+  return post<ApiResponse<SessionVO>>('/chat/command/session/create', data)
 }
 
-export function updateSession(sessionId: string, data: UpdateSessionParams) {
-  return put<ApiResponse<void>>(`/chat/sessions/${sessionId}`, data)
+export function sendMessage(data: SendMessageParams) {
+  return post<ApiResponse<void>>('/chat/command/session/send', data)
 }
 
-export function deleteSession(sessionId: string) {
-  return del<ApiResponse<void>>(`/chat/sessions/${sessionId}`)
+export function deleteSession(num: string) {
+  return post<ApiResponse<void>>('/chat/command/session/delete', null, { params: { num } })
 }
 
-export function getMessages(sessionId: string, params?: { current?: number; pageSize?: number }) {
-  return get<ApiResponse<PageResult<MessageVO>>>(`/chat/sessions/${sessionId}/messages`, { params })
+export function renameSession(num: string, newTitle: string) {
+  return post<ApiResponse<void>>('/chat/command/session/rename', null, { params: { num, newTitle } })
 }
 
-export function sendMessage(sessionId: string, content: string) {
-  return post<ApiResponse<MessageVO>>(`/chat/sessions/${sessionId}/messages`, { content })
+// ==================== Share ====================
+
+export function createShare(sessionNum: string) {
+  return post<ApiResponse<ShareResultVO>>('/chat/command/share/create', { sessionNum })
 }
+
+export function invalidateShare(shareToken: string) {
+  return post<ApiResponse<void>>('/chat/command/share/invalidate', { shareToken })
+}
+
+export function getShareContent(shareToken: string) {
+  return get<ApiResponse<ShareContentVO>>('/chat/query/share/content', { params: { shareToken } })
+}
+
+// ==================== SSE Streaming ====================
 
 export async function sendMessageSSE(
-  sessionId: string,
+  sessionNum: string,
   content: string,
+  agentId: number | undefined,
   onChunk: (text: string, isDone: boolean) => void,
 ): Promise<void> {
   const token = localStorage.getItem('token')
-  const response = await fetch(`/api/chat/sessions/${sessionId}/messages/stream`, {
+  const response = await fetch('/api/chat/command/stream', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: token ? `Bearer ${token}` : '',
     },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ sessionNum, content, agentId }),
   })
 
   if (!response.ok) throw new Error('SSE request failed')
@@ -70,7 +116,7 @@ export async function sendMessageSSE(
         if (data) {
           try {
             const parsed = JSON.parse(data)
-            onChunk(parsed.content || parsed.delta || data, false)
+            onChunk(parsed.chunk || parsed.content || '', parsed.isDone || false)
           } catch {
             onChunk(data, false)
           }
@@ -78,8 +124,4 @@ export async function sendMessageSSE(
       }
     }
   }
-}
-
-export function stopGeneration(sessionId: string) {
-  return post<ApiResponse<void>>(`/chat/sessions/${sessionId}/stop`)
 }

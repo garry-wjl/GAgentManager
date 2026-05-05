@@ -55,6 +55,11 @@ facade ───→ client (接口定义)
 |------|------|
 | auth | 用户认证 — JWT 登录、注册、Token 刷新 |
 | user | 用户管理 — 用户 CRUD、个人资料、聊天 |
+| agent | Agent 管理 — Agent CRUD、命令控制、用户端查询 |
+| chat | 聊天 — 用户端对话交互、消息引用、对话分享 |
+| file | 文件管理 — 文件上传/下载、附件预览、本地存储 |
+| prompt | Prompt 模板 — 推荐 Prompt 查询与管理 |
+| device | 设备管理 — 登录设备查看、强制下线 |
 | agent | Agent 管理 — Agent CRUD、命令控制 |
 | skill | Skill 管理 — Skill 注册、发布、命令控制 |
 | model | 模型管理 — AI 模型配置、命令控制 |
@@ -64,7 +69,6 @@ facade ───→ client (接口定义)
 | audit | 审计日志 — 操作审计查询 |
 | rbac | 权限管理 — 角色、权限 CRUD |
 | system_config | 系统配置 — 全局配置管理 |
-| chat | 聊天 — 用户端对话交互 |
 
 ## 快速开始
 
@@ -79,6 +83,7 @@ facade ───→ client (接口定义)
 ```bash
 mysql -u root -p < backend/sql/init.sql
 mysql -u root -p < backend/sql/2026-05-15_agent_management_extension.sql
+mysql -u root -p < backend/sql/2026-05-05_user_end_refactor.sql
 ```
 
 ### 2. 修改配置
@@ -135,3 +140,22 @@ mvn spring-boot:run -pl start
 | Refresh Token | 7 天 | 刷新 Access Token |
 
 请求时在 Header 中携带：`Authorization: Bearer <access-token>`
+
+## 文件存储配置
+
+支持本地文件存储（开发环境）和 MinIO/OSS 对象存储（生产环境）。在 `application.yml` 中配置：
+
+```yaml
+file:
+  storage:
+    local:
+      base-path: ./gagent-files        # 本地存储目录
+      url-prefix: http://localhost:8080/api/file/download?key=
+    max-file-size: 20971520            # 单文件最大 20MB
+    allowed-types:                     # 允许的文件类型
+      - image/png
+      - image/jpeg
+      - text/plain
+      - application/pdf
+      # ... 更多类型见 application.yml
+```

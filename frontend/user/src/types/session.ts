@@ -1,19 +1,20 @@
 export interface SessionVO {
-  sessionId: string
+  id: number
+  num: string
   sessionTitle: string
-  agentId: string
-  agentName: string
+  userId: number
+  agentId: number
   messageCount: number
-  isActive: boolean
+  lastMessageTime: string
   createTime: string
-  updateTime: string
 }
 
 export interface CreateSessionParams {
-  agentId: string
+  agentId?: number
   sessionTitle?: string
 }
 
 export interface UpdateSessionParams {
-  sessionTitle: string
+  num: string
+  newTitle: string
 }

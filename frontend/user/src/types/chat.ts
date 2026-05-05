@@ -1,19 +1,42 @@
 export interface AttachmentVO {
-  fileId: string
+  fileUrl: string
   fileName: string
   fileSize: number
-  fileType: string
+  mimeType: string
+}
+
+export interface FileInfoVO {
+  num: string
   fileUrl: string
-  thumbnailUrl?: string
+  fileName: string
+  fileSize: number
+  mimeType: string
+  fileType: string
+  createTime: string
+}
+
+export interface UploadResultVO {
+  num: string
+  fileUrl: string
+  fileName: string
+  fileSize: number
+  mimeType: string
+  fileType: string
 }
 
 export interface MessageVO {
-  messageId: string
-  sessionId: string
-  role: 'user' | 'assistant' | 'system'
+  num: string
+  sessionId: number
+  role: string
   content: string
+  replyToMessageNum?: string
   thinkingChain?: string
-  attachments?: AttachmentVO[]
+  attachments?: string
+  webPreviews?: string
+  usedSkills?: string
+  usedModel?: string
+  tokenUsage?: number
+  isError?: boolean
   createTime: string
 }
 
@@ -24,4 +47,16 @@ export interface BubbleListItem {
   thinkingChain?: string
   attachments?: AttachmentVO[]
   createdAt: string
+}
+
+export interface SendMessageParams {
+  sessionNum: string
+  content: string
+  replyToMessageNum?: string
+  agentId?: number
+  attachments?: AttachmentVO[]
+}
+
+export interface MarkdownExportVO {
+  content: string
 }

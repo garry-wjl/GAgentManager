@@ -4,19 +4,25 @@ import {
 } from '@ant-design/x'
 import {
   PlusOutlined, DeleteOutlined, EditOutlined, SearchOutlined,
+  PaperClipOutlined, RightOutlined, LeftOutlined, ShareAltOutlined,
+  DownOutlined, SendOutlined,
 } from '@ant-design/icons'
-import { Input, Modal, message, Dropdown, Spin, Button } from 'antd'
+import { Input, Modal, message, Dropdown, Spin, Button, Select, Tag } from 'antd'
 import type { MenuProps } from 'antd'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
-  getSessions, createSession, updateSession, deleteSession,
-  getMessages, sendMessageSSE,
+  listSessions, createSession, deleteSession, renameSession,
+  listMessages, listSessionAttachments, sendMessageSSE, createShare,
 } from '../../api/chat'
+import { listAgentsForUser } from '../../api/agent'
+import { listPrompts } from '../../api/prompt'
 import type { SessionVO } from '../../types/session'
-import type { AttachmentVO, BubbleListItem } from '../../types/chat'
+import type { AttachmentVO, BubbleListItem, FileInfoVO, MessageVO } from '../../types/chat'
+import type { AgentSimpleVO } from '../../types/agent'
+import type { PromptTemplateVO } from '../../types/prompt'
 import type { ApiResponse, PageResult } from '../../types/api'
-import type { MessageVO } from '../../types/chat'
+import { useAuth } from '../../hooks/useAuth'
 
 // Markdown 渲染组件
 function MarkdownContent({ content }: { content: string }) {
@@ -27,116 +33,201 @@ function MarkdownContent({ content }: { content: string }) {
   )
 }
 
+// 附件卡片组件
+function AttachmentCard({ file }: { file: FileInfoVO }) {
+  const sizeStr = file.fileSize > 1024 * 1024
+    ? `${(file.fileSize / (1024 * 1024)).toFixed(1)} MB`
+    : `${(file.fileSize / 1024).toFixed(1)} KB`
+  const icon = file.fileType === 'IMAGE' ? '🖼️' : file.fileType === 'PDF' ? '📄' : file.fileType === 'TEXT' ? '📝' : '📎'
+  return (
+    <div style={{
+      padding: '8px 12px',
+      background: '#f7f8fa',
+      borderRadius: 8,
+      marginBottom: 4,
+      fontSize: 13,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+    }}>
+      <span>{icon}</span>
+      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {file.fileName}
+      </span>
+      <span style={{ color: '#999', fontSize: 12 }}>{sizeStr}</span>
+    </div>
+  )
+}
+
 export default function Chat() {
+  const { user } = useAuth()
   const [sessions, setSessions] = useState<SessionVO[]>([])
-  const [activeSession, setActiveSession] = useState<string | undefined>(undefined)
+  const [activeSession, setActiveSession] = useState<SessionVO | null>(null)
   const [items, setItems] = useState<BubbleListItem[]>([])
   const [loading, setLoading] = useState(false)
   const [searchValue, setSearchValue] = useState('')
-  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingNum, setEditingNum] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
 
-  // 加载会话列表
-  const loadSessions = async () => {
+  // Agent
+  const [agents, setAgents] = useState<AgentSimpleVO[]>([])
+  const [selectedAgentId, setSelectedAgentId] = useState<number | undefined>(undefined)
+
+  // File panel
+  const [filePanelVisible, setFilePanelVisible] = useState(false)
+  const [attachments, setAttachments] = useState<FileInfoVO[]>([])
+
+  // Prompts
+  const [prompts, setPrompts] = useState<PromptTemplateVO[]>([])
+
+  // Load agents
+  const loadAgents = async () => {
     try {
-      const res = await getSessions() as ApiResponse<SessionVO[]>
-      setSessions(res.data)
-      if (!activeSession && res.data.length > 0) {
-        setActiveSession(res.data[0].sessionId)
-        loadMessages(res.data[0].sessionId)
-      }
-    } catch { /* mock 模式下静默 */ }
+      const res = await listAgentsForUser() as ApiResponse<AgentSimpleVO[]>
+      setAgents(res.data || [])
+    } catch { /* silent */ }
   }
 
-  // 加载消息历史
-  const loadMessages = async (sessionId: string) => {
+  // Load prompts
+  const loadPrompts = async () => {
+    try {
+      const res = await listPrompts() as ApiResponse<PromptTemplateVO[]>
+      setPrompts(res.data || [])
+    } catch { /* silent */ }
+  }
+
+  // Load sessions
+  const loadSessions = async () => {
+    try {
+      const res = await listSessions() as ApiResponse<SessionVO[]>
+      setSessions(res.data || [])
+      if (!activeSession && res.data && res.data.length > 0) {
+        setActiveSession(res.data[0])
+        loadMessages(res.data[0])
+        loadAttachments(res.data[0])
+      }
+    } catch { /* silent */ }
+  }
+
+  // Load messages
+  const loadMessages = async (session: SessionVO) => {
     setLoading(true)
     try {
-      const res = await getMessages(sessionId) as ApiResponse<PageResult<MessageVO>>
-      const list: BubbleListItem[] = res.data.records.map((m) => ({
-        key: m.messageId,
-        role: m.role,
+      const res = await listMessages(session.id, 1, 200) as ApiResponse<PageResult<MessageVO>>
+      const list: BubbleListItem[] = (res.data?.records || []).map((m) => ({
+        key: m.num,
+        role: m.role as 'user' | 'assistant' | 'system',
         content: m.content,
+        replyToMessageNum: m.replyToMessageNum,
         thinkingChain: m.thinkingChain,
-        attachments: m.attachments,
         createdAt: m.createTime,
       }))
       setItems(list)
-    } catch { /* mock */ } finally {
+    } catch { /* silent */ } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { loadSessions() }, [])
+  // Load attachments
+  const loadAttachments = async (session: SessionVO) => {
+    try {
+      const res = await listSessionAttachments(session.id) as ApiResponse<FileInfoVO[]>
+      setAttachments(res.data || [])
+    } catch { /* silent */ }
+  }
 
-  // 新建会话
+  useEffect(() => {
+    loadSessions()
+    loadAgents()
+    loadPrompts()
+  }, [])
+
+  // New session
   const handleNewSession = async () => {
     try {
-      const res = await createSession({ agentId: 'default', sessionTitle: '新会话' }) as ApiResponse<SessionVO>
+      const res = await createSession({
+        agentId: selectedAgentId,
+        sessionTitle: '新会话',
+      }) as ApiResponse<SessionVO>
       const newSession = res.data
       setSessions((prev) => [newSession, ...prev])
-      setActiveSession(newSession.sessionId)
+      setActiveSession(newSession)
       setItems([])
+      setAttachments([])
     } catch {
-      const mock: SessionVO = {
-        sessionId: Date.now().toString(),
-        sessionTitle: '新会话',
-        agentId: 'default',
-        agentName: '默认Agent',
-        messageCount: 0,
-        isActive: true,
-        createTime: new Date().toISOString(),
-        updateTime: new Date().toISOString(),
-      }
-      setSessions((prev) => [mock, ...prev])
-      setActiveSession(mock.sessionId)
-      setItems([])
+      message.error('创建会话失败')
     }
   }
 
-  // 切换会话
-  const handleSelectSession = (sessionId: string) => {
-    setActiveSession(sessionId)
-    loadMessages(sessionId)
+  // Select session
+  const handleSelectSession = async (num: string) => {
+    const session = sessions.find((s) => s.num === num)
+    if (!session) return
+    setActiveSession(session)
+    setSelectedAgentId(session.agentId || undefined)
+    setItems([])
+    await loadMessages(session)
+    await loadAttachments(session)
   }
 
-  // 删除会话
-  const handleDeleteSession = async (sessionId: string) => {
+  // Delete session
+  const handleDeleteSession = (num: string) => {
     Modal.confirm({
       title: '确认删除',
       content: '删除后将无法恢复该会话记录',
       onOk: async () => {
-        try { await deleteSession(sessionId) } catch { /* mock */ }
-        setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId))
-        if (activeSession === sessionId) {
-          setActiveSession(undefined)
+        try {
+          await deleteSession(num)
+        } catch { /* silent */ }
+        setSessions((prev) => prev.filter((s) => s.num !== num))
+        if (activeSession?.num === num) {
+          setActiveSession(null)
           setItems([])
+          setAttachments([])
         }
         message.success('会话已删除')
       },
     })
   }
 
-  // 重命名会话
+  // Rename session
   const handleRenameSession = (session: SessionVO) => {
-    setEditingId(session.sessionId)
+    setEditingNum(session.num)
     setEditingTitle(session.sessionTitle)
   }
 
   const handleSaveTitle = async () => {
-    if (!editingId) return
-    try { await updateSession(editingId, { sessionTitle: editingTitle }) } catch { /* mock */ }
+    if (!editingNum) return
+    try {
+      await renameSession(editingNum, editingTitle)
+    } catch { /* silent */ }
     setSessions((prev) =>
       prev.map((s) =>
-        s.sessionId === editingId ? { ...s, sessionTitle: editingTitle } : s,
+        s.num === editingNum ? { ...s, sessionTitle: editingTitle } : s,
       ),
     )
-    setEditingId(null)
+    if (activeSession?.num === editingNum) {
+      setActiveSession({ ...activeSession, sessionTitle: editingTitle })
+    }
+    setEditingNum(null)
     message.success('重命名成功')
   }
 
-  // 发送消息
+  // Share
+  const handleShare = async () => {
+    if (!activeSession) return
+    try {
+      const res = await createShare(activeSession.num) as ApiResponse<{ shareToken: string; shareUrl: string }>
+      const url = window.location.origin + res.data.shareUrl
+      navigator.clipboard.writeText(url)
+      message.success('分享链接已复制到剪贴板')
+    } catch {
+      message.error('创建分享失败')
+    }
+  }
+
+  // Send message
   const handleSend = useCallback(async (value: string) => {
     if (!value.trim() || !activeSession || isStreaming) return
 
@@ -157,7 +248,7 @@ export default function Chat() {
     setIsStreaming(true)
 
     try {
-      await sendMessageSSE(activeSession, value, (chunk, isDone) => {
+      await sendMessageSSE(activeSession.num, value, selectedAgentId, (chunk, isDone) => {
         setItems((prev) =>
           prev.map((item) =>
             item.key === assistantKey
@@ -167,6 +258,8 @@ export default function Chat() {
         )
         if (isDone) {
           setIsStreaming(false)
+          // Reload session to update message count
+          loadSessions()
         }
       })
     } catch {
@@ -174,16 +267,16 @@ export default function Chat() {
         setItems((prev) =>
           prev.map((item) =>
             item.key === assistantKey
-              ? { ...item, content: `收到您的消息: "${value}"\n\n这是一个模拟回复。`, thinkingChain: undefined }
+              ? { ...item, content: `收到您的消息: "${value}"\n\n（AI 服务暂未连接，此为模拟回复）`, thinkingChain: undefined }
               : item,
           ),
         )
         setIsStreaming(false)
-      }, 1000)
+      }, 800)
     }
-  }, [activeSession, isStreaming])
+  }, [activeSession, isStreaming, selectedAgentId])
 
-  // 会话操作菜单
+  // Session menu
   const sessionMenu = (session: SessionVO): MenuProps['items'] => [
     {
       key: 'rename',
@@ -196,13 +289,18 @@ export default function Chat() {
       icon: <DeleteOutlined />,
       label: '删除',
       danger: true,
-      onClick: () => handleDeleteSession(session.sessionId),
+      onClick: () => handleDeleteSession(session.num),
     },
   ]
 
   const filteredSessions = sessions.filter((s) =>
     s.sessionTitle.toLowerCase().includes(searchValue.toLowerCase()),
   )
+
+  const agentOptions = [
+    { value: undefined, label: '🤖 自动' },
+    ...agents.map((a) => ({ value: a.id, label: a.agentName })),
+  ]
 
   return (
     <XProvider>
@@ -216,16 +314,10 @@ export default function Chat() {
           background: '#fafafa',
         }}>
           <div style={{ padding: '12px 16px' }}>
-            <Button
-              type="primary"
-              block
-              icon={<PlusOutlined />}
-              onClick={handleNewSession}
-            >
+            <Button type="primary" block icon={<PlusOutlined />} onClick={handleNewSession}>
               新对话
             </Button>
           </div>
-
           <div style={{ padding: '0 16px 12px' }}>
             <Input
               placeholder="搜索会话"
@@ -236,14 +328,13 @@ export default function Chat() {
               allowClear
             />
           </div>
-
           <div style={{ flex: 1, overflow: 'auto' }}>
             <Conversations
-              activeKey={activeSession}
+              activeKey={activeSession?.num}
               onActiveChange={handleSelectSession}
               items={filteredSessions.map((s) => ({
-                key: s.sessionId,
-                label: editingId === s.sessionId ? (
+                key: s.num,
+                label: editingNum === s.num ? (
                   <Input
                     size="small"
                     value={editingTitle}
@@ -257,10 +348,7 @@ export default function Chat() {
                 description: `${s.messageCount} 条消息`,
                 extra: (
                   <Dropdown menu={{ items: sessionMenu(s) }} trigger={['click']} placement="bottomRight">
-                    <span
-                      onClick={(e) => e.stopPropagation()}
-                      style={{ cursor: 'pointer', padding: 4 }}
-                    >
+                    <span onClick={(e) => e.stopPropagation()} style={{ cursor: 'pointer', padding: 4 }}>
                       ⋯
                     </span>
                   </Dropdown>
@@ -268,60 +356,80 @@ export default function Chat() {
               }))}
             />
           </div>
+          {/* 底部导航 */}
+          <div style={{ padding: '12px 16px', borderTop: '1px solid #f0f0f0' }}>
+            <a href="/profile" style={{ display: 'block', marginBottom: 8, color: '#1677ff' }}>
+              <DownOutlined style={{ marginRight: 6 }} />个人中心
+            </a>
+          </div>
         </div>
 
-        {/* 右侧对话区 */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fff' }}>
+        {/* 中间聊天区 */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fff', minWidth: 0 }}>
           {items.length === 0 ? (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
               <Welcome
                 variant="borderless"
                 icon="https://mdn.alipayobjects.com/huamei/czg_jc2yfV/afts/img/A*6JjNSO6jIM8AAAAAQFAAAAgALhAAAAAAQAgAgKAEAAAQAAAQ/original"
                 title="欢迎使用 GAgentManager"
                 description="选择一个已有会话或新建对话开始交流"
               />
+              {prompts.length > 0 && (
+                <div style={{ marginTop: 24, display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 600 }}>
+                  {prompts.map((p) => (
+                    <Button
+                      key={p.num}
+                      size="small"
+                      onClick={() => {
+                        handleNewSession()
+                        // Will fill input - for now just navigate
+                      }}
+                    >
+                      {p.icon} {p.title}
+                    </Button>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <div style={{ flex: 1, overflow: 'auto', padding: '16px 24px' }}>
               <Spin spinning={loading}>
                 <Bubble.List
-                  items={items.map((item) => ({
-                    key: item.key,
-                    role: item.role,
-                    placement: item.role === 'user' ? 'end' : 'start',
-                    content: (
-                      <div>
-                        {item.thinkingChain && (
-                          <ThoughtChain style={{ marginBottom: 8 }}>
-                            {item.thinkingChain}
-                          </ThoughtChain>
-                        )}
-                        {item.role === 'assistant' ? (
-                          <MarkdownContent content={item.content || '...'} />
-                        ) : (
-                          <div style={{ whiteSpace: 'pre-wrap' }}>{item.content}</div>
-                        )}
-                        {item.attachments && item.attachments.length > 0 && (
-                          <div style={{ marginTop: 8 }}>
-                            {item.attachments.map((att: AttachmentVO) => (
-                              <div
-                                key={att.fileId}
-                                style={{
-                                  padding: '8px 12px',
-                                  background: '#f7f8fa',
-                                  borderRadius: 8,
-                                  marginBottom: 4,
-                                  fontSize: 13,
-                                }}
-                              >
-                                📎 {att.fileName} ({(att.fileSize / 1024).toFixed(1)} KB)
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ),
-                  }))}
+                  items={items.map((item) => {
+                    const isUser = item.role === 'user'
+                    return {
+                      key: item.key,
+                      role: item.role,
+                      placement: isUser ? 'end' as const : 'start' as const,
+                      content: (
+                        <div>
+                          {item.replyToMessageNum && (
+                            <div style={{
+                              padding: '4px 8px',
+                              background: '#f0f5ff',
+                              borderRadius: 4,
+                              marginBottom: 8,
+                              fontSize: 12,
+                              color: '#666',
+                              borderLeft: '3px solid #1677ff',
+                            }}>
+                              引用: {item.replyToMessageNum}
+                            </div>
+                          )}
+                          {item.thinkingChain && (
+                            <ThoughtChain style={{ marginBottom: 8 }}>
+                              {item.thinkingChain}
+                            </ThoughtChain>
+                          )}
+                          {!isUser ? (
+                            <MarkdownContent content={item.content || '...'} />
+                          ) : (
+                            <div style={{ whiteSpace: 'pre-wrap' }}>{item.content}</div>
+                          )}
+                        </div>
+                      ),
+                    }
+                  })}
                 />
               </Spin>
             </div>
@@ -337,6 +445,60 @@ export default function Chat() {
             />
           </div>
         </div>
+
+        {/* 右侧文件面板 */}
+        {filePanelVisible && (
+          <div style={{
+            width: 320,
+            borderLeft: '1px solid #f0f0f0',
+            display: 'flex',
+            flexDirection: 'column',
+            background: '#fafafa',
+          }}>
+            <div style={{
+              padding: '12px 16px',
+              borderBottom: '1px solid #f0f0f0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
+              <span style={{ fontWeight: 600 }}>📎 文件列表</span>
+              <Button size="small" icon={<LeftOutlined />} onClick={() => setFilePanelVisible(false)}>
+                收起
+              </Button>
+            </div>
+            <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
+              {attachments.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#999', marginTop: 40 }}>
+                  当前会话暂无附件
+                </div>
+              ) : (
+                attachments.map((f) => <AttachmentCard key={f.num} file={f} />)
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 右侧面板切换按钮（当面板收起时显示） */}
+        {!filePanelVisible && activeSession && (
+          <div style={{
+            width: 32,
+            borderLeft: '1px solid #f0f0f0',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: '#fff',
+          }}>
+            <Button
+              type="text"
+              size="small"
+              icon={<RightOutlined />}
+              onClick={() => setFilePanelVisible(true)}
+              title="查看附件"
+            />
+          </div>
+        )}
       </div>
     </XProvider>
   )
