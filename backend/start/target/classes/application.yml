@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: gagent-manager
+  datasource:
+    url: jdbc:mysql://localhost:3306/gagent_manager?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    serialization:
+      write-dates-as-timestamps: false
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/**/*.xml
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+jwt:
+  access-token-secret: gagent-manager-jwt-secret-key-must-be-at-least-256-bits-long
+  refresh-token-secret: gagent-manager-refresh-token-secret-key-must-be-at-least-256-bits
+  access-token-expiration: 7200000
+  refresh-token-expiration: 604800000
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.gagentmanager: DEBUG

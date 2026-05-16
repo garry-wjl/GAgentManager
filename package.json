@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@ant-design/pro-components": "^2.8.10",
+    "@ant-design/pro-layout": "^7.22.7"
+  }
+}
