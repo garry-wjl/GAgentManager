@@ -10,6 +10,7 @@ import PermissionManagement from './pages/PermissionManagement'
 import SkillStore from './pages/SkillStore'
 import MCPManagement from './pages/MCPManagement'
 import ModelManagement from './pages/ModelManagement'
+import ModelDetail from './pages/ModelManagement/detail'
 import SystemSettings from './pages/SystemSettings'
 import ProtectedRoute from './routes/ProtectedRoute'
 
@@ -36,6 +37,7 @@ function App() {
         <Route path="skills" element={<SkillStore />} />
         <Route path="mcps" element={<MCPManagement />} />
         <Route path="models" element={<ModelManagement />} />
+        <Route path="models/:num" element={<ModelDetail />} />
         <Route path="settings" element={<SystemSettings />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

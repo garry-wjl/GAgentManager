@@ -9,7 +9,7 @@ public interface ModelRepository {
     Model findById(Long id);
     Model findByNum(String num);
     Model findByCode(String code);
-    IPage<Model> list(IPage<Model> page, String keyword, String provider, String status);
+    IPage<Model> list(IPage<Model> page, String keyword, String provider, String status, String category);
     void save(Model model, Long operatorId);
     void delete(String num, Long operatorId);
     long count();

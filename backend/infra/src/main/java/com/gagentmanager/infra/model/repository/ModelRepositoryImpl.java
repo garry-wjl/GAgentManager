@@ -49,7 +49,7 @@ public class ModelRepositoryImpl implements ModelRepository {
     }
 
     @Override
-    public IPage<Model> list(IPage<Model> page, String keyword, String provider, String status) {
+    public IPage<Model> list(IPage<Model> page, String keyword, String provider, String status, String category) {
         Page<ModelEntity> mpPage = new Page<>(page.getCurrent(), page.getSize());
         LambdaQueryWrapper<ModelEntity> qw = new LambdaQueryWrapper<ModelEntity>()
                 .eq(ModelEntity::getDeleted, false);
@@ -63,6 +63,9 @@ public class ModelRepositoryImpl implements ModelRepository {
         }
         if (StringUtils.hasText(status)) {
             qw.eq(ModelEntity::getStatus, status);
+        }
+        if (StringUtils.hasText(category)) {
+            qw.eq(ModelEntity::getCategory, category);
         }
         qw.orderByAsc(ModelEntity::getSortOrder)
           .orderByDesc(ModelEntity::getCreateTime);
@@ -87,7 +90,7 @@ public class ModelRepositoryImpl implements ModelRepository {
         Model model = findByNum(num);
         if (model != null) {
             model.delete(operatorId);
-            modelMapper.updateById(toEntity(model));
+            modelMapper.deleteById(model.getId());
         }
     }
 

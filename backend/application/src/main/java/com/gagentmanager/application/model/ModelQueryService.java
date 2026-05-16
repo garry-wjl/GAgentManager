@@ -37,9 +37,9 @@ public class ModelQueryService {
         return toVO(model);
     }
 
-    public IPage<ModelVO> listModels(PageParam pageParam, String keyword, String provider, String status) {
+    public IPage<ModelVO> listModels(PageParam pageParam, String keyword, String provider, String status, String category) {
         Page<Model> page = new Page<>(pageParam.getPageNo(), pageParam.getPageSize());
-        IPage<Model> modelPage = modelRepository.list(page, keyword, provider, status);
+        IPage<Model> modelPage = modelRepository.list(page, keyword, provider, status, category);
         return modelPage.convert(this::toVO);
     }
 

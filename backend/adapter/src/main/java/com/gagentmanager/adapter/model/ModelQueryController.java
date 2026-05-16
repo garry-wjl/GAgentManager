@@ -31,8 +31,8 @@ public class ModelQueryController extends BaseController {
     }
 
     @GetMapping("/list")
-    public Result<PageResult<ModelVO>> list(PageParam pageParam, String keyword, String provider, String status) {
-        IPage<ModelVO> page = modelQueryService.listModels(pageParam, keyword, provider, status);
+    public Result<PageResult<ModelVO>> list(PageParam pageParam, String keyword, String provider, String status, String category) {
+        IPage<ModelVO> page = modelQueryService.listModels(pageParam, keyword, provider, status, category);
         return success(PageResult.of(page.getRecords(), page.getTotal(), (int) page.getCurrent(), (int) page.getSize()));
     }
 }
