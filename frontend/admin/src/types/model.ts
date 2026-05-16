@@ -1,11 +1,14 @@
 export interface ModelItem {
   modelId: string
   num?: string
+  modelCode?: string
   modelName: string
   provider: ModelProvider
   apiType: ModelApiType
   status: ModelStatus
   capabilities: string[]
+  connectivityStatus?: string
+  _rawStatus?: string
   boundAgentCount: number
   avgResponseTime?: number
   totalCalls: number
@@ -33,6 +36,7 @@ export type ModelStatus = '已启用' | '已禁用' | '异常'
 
 export interface ModelFormValues {
   modelName: string
+  modelCode?: string
   provider: ModelProvider
   apiType: ModelApiType
   baseUrl: string
@@ -40,11 +44,6 @@ export interface ModelFormValues {
   timeoutSeconds?: number
   maxRetries?: number
   maxTokens?: number
-  minTemperature?: number
-  maxTemperature?: number
-  defaultTemperature?: number
-  defaultTopP?: number
-  defaultTopK?: number
   capabilities: string[]
   inputTypes: string[]
   outputTypes: string[]
