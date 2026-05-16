@@ -36,6 +36,7 @@ public class UserCommandService {
         User user = new User();
         BeanUtils.copyProperties(param, user);
         user.setPassword(passwordEncoder.encode(param.getPassword()));
+        user.setStatus("DRAFT");
         user.save(operatorId);
         userRepository.save(user, operatorId);
         return toVO(user);

@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import AgentManagement from './pages/AgentManagement'
 import AgentDetail from './pages/AgentDetail'
 import UserManagement from './pages/UserManagement'
+import UserDetail from './pages/UserManagement/detail'
 import PermissionManagement from './pages/PermissionManagement'
 import SkillStore from './pages/SkillStore'
 import MCPManagement from './pages/MCPManagement'
@@ -30,6 +31,7 @@ function App() {
         <Route path="agents/new" element={<AgentDetail />} />
         <Route path="agents/:num" element={<AgentDetail />} />
         <Route path="users" element={<UserManagement />} />
+        <Route path="users/detail/:num" element={<UserDetail />} />
         <Route path="permissions" element={<PermissionManagement />} />
         <Route path="skills" element={<SkillStore />} />
         <Route path="mcps" element={<MCPManagement />} />

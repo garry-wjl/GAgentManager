@@ -37,7 +37,7 @@ export interface UserListItem {
   loginFailCount: number
 }
 
-export type UserStatus = '已启用' | '已禁用' | '已离职' | '已删除'
+export type UserStatus = 'DRAFT' | 'ENABLED' | 'DISABLED' | 'RESIGNED'
 export type UserSource = '手动创建' | '导入' | 'SSO' | '邀请注册' | 'API创建'
 
 export interface UserFormValues {
@@ -50,7 +50,7 @@ export interface UserFormValues {
   email: string
   source: UserSource
   department?: string
-  status: '已启用' | '已禁用'
+  status: UserStatus
   expireTime?: string
   mfaEnabled?: boolean
   roleNames?: string[]

@@ -21,6 +21,7 @@ public record ErrorCode(int code, String message) {
     public static final ErrorCode PASSWORD_INCORRECT = new ErrorCode(1007, "旧密码错误");
     public static final ErrorCode USER_NOT_FOUND = new ErrorCode(1008, "用户不存在");
     public static final ErrorCode USERNAME_ALREADY_EXISTS = new ErrorCode(1009, "用户名已存在");
+    public static final ErrorCode USER_DELETE_NOT_DRAFT = new ErrorCode(1012, "只有草稿状态的用户才能删除");
     public static final ErrorCode EMAIL_ALREADY_EXISTS = new ErrorCode(1010, "邮箱已存在");
     public static final ErrorCode EMAIL_NOT_MATCH = new ErrorCode(1011, "邮箱与账号不匹配");
     public static final ErrorCode SESSION_ACCESS_DENIED = new ErrorCode(1020, "会话不属于当前用户");

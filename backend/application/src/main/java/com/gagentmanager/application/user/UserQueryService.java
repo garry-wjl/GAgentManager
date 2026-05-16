@@ -37,6 +37,10 @@ public class UserQueryService {
         return toVO(user);
     }
 
+    public boolean checkUsernameExists(String username) {
+        return userRepository.findByUsername(username) != null;
+    }
+
     public IPage<UserVO> listUsers(PageParam pageParam, String keyword, String status) {
         Page<User> page = new Page<>(pageParam.getPageNo(), pageParam.getPageSize());
         IPage<User> userPage = userRepository.list(page, keyword, status);

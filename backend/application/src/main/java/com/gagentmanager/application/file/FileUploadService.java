@@ -31,7 +31,7 @@ public class FileUploadService {
     @Value("${file.storage.max-file-size:20971520}")
     private long maxFileSize;
 
-    @Value("${file.storage.allowed-types}")
+    @Value("${file.storage.allowed-types:image/png,image/jpeg,image/gif,text/plain,application/pdf}")
     private List<String> allowedTypes;
 
     public FileUploadService(FileGateway fileGateway,

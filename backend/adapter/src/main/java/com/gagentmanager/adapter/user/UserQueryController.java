@@ -35,6 +35,11 @@ public class UserQueryController extends BaseController {
         return success(userQueryService.getUserByNum(num));
     }
 
+    @GetMapping("/check-username")
+    public Result<Boolean> checkUsername(@RequestParam String username) {
+        return success(userQueryService.checkUsernameExists(username));
+    }
+
     @GetMapping("/list")
     public Result<PageResult<UserVO>> list(PageParam pageParam, String keyword, String status) {
         IPage<UserVO> page = userQueryService.listUsers(pageParam, keyword, status);

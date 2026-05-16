@@ -17,7 +17,7 @@ public class User extends DomainEntity {
     private String phone;
     private String email;
     private String source;       // MANUAL/IMPORT/SSO/INVITE/API
-    private String status;       // ENABLED/DISABLED/RESIGNED/DELETED
+    private String status;       // DRAFT/ENABLED/DISABLED/RESIGNED
     private String department;
     private String avatar;
     private String notes;
@@ -38,10 +38,10 @@ public class User extends DomainEntity {
     }
 
     public void delete(Long operatorId) {
-        if ("DELETED".equals(this.status)) {
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        if (!"DRAFT".equals(this.status)) {
+            throw new BusinessException(ErrorCode.USER_DELETE_NOT_DRAFT);
         }
-        this.status = "DELETED";
+        this.setDeleted(true);
         this.setUpdateNo(String.valueOf(operatorId));
         this.setUpdateTime(new Date());
     }
