@@ -2,21 +2,51 @@ export interface MCPItem {
   mcpId: string
   num?: string
   mcpName: string
-  description?: string
-  latestVersion: string
-  currentVersion: string
-  isEnabled: boolean
+  description: string
+  feature?: string
+  tags?: string
+  source: MCPSource
   status: MCPStatus
-  boundAgentCount: number
-  creator: string
+  _rawStatus?: string
+  icon?: string
+  configJson?: string
+  requestHeaders?: string
+  boundAgentCount?: number
+  creator?: string
   createTime: string
-  updater: string
+  updater?: string
   updateTime: string
-  lastConnectTime?: string
-  errorCount: number
 }
 
-export type MCPStatus = '未连接' | '连接中' | '已连接' | '异常'
+export type MCPSource = 'MCP_GATEWAY' | 'MANUAL'
+export type MCPStatus = '草稿' | '已启用' | '已禁用'
+
+export interface MCPToolItem {
+  name: string
+  description: string
+  inputParams: ParamNode[]
+  outputParams: ParamNode[]
+}
+
+export interface ParamNode {
+  fieldName: string
+  type: string
+  description: string
+  children?: ParamNode[]
+}
+
+export interface MCPFormValues {
+  mcpName: string
+  description: string
+  feature?: string
+  tags?: string
+  icon?: string
+  source?: string
+  status?: string
+  configType: 'SSE' | 'STREAMABLE_HTTP'
+  configUrl?: string
+  headers?: Array<{ key: string; value: string }>
+}
 
 export interface MCPVersion {
   versionId: string
@@ -29,22 +59,4 @@ export interface MCPVersion {
   publishTime?: string
   createTime: string
   isCurrentVersion: boolean
-}
-
-export interface MCPFormValues {
-  mcpName: string
-  description?: string
-  serverUrl: string
-  protocolVersion: 'v1.0' | 'v1.1' | 'v2.0'
-  transportType: 'stdio' | 'sse' | 'http'
-  authType: '无认证' | 'API Key' | 'Bearer Token' | 'OAuth2.0' | 'Basic Auth'
-  credentials?: Record<string, string>
-  timeoutSeconds?: number
-  retryEnabled?: boolean
-  maxRetries?: number
-  healthCheckUrl?: string
-  healthCheckInterval?: number
-  envVariables?: Record<string, string>
-  command?: string
-  args?: string[]
 }

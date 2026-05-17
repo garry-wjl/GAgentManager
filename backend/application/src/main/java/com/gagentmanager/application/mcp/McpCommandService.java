@@ -12,20 +12,17 @@ import org.springframework.stereotype.Service;
 public class McpCommandService {
 
     private final McpRepository mcpRepository;
-    private final McpVersionRepository mcpVersionRepository;
     private final McpClientGateway mcpClientGateway;
 
-    public McpCommandService(McpRepository mcpRepository, McpVersionRepository mcpVersionRepository,
-                             McpClientGateway mcpClientGateway) {
+    public McpCommandService(McpRepository mcpRepository, McpClientGateway mcpClientGateway) {
         this.mcpRepository = mcpRepository;
-        this.mcpVersionRepository = mcpVersionRepository;
         this.mcpClientGateway = mcpClientGateway;
     }
 
     public McpVO createMcp(CreateMcpParam param, Long operatorId) {
-        McpService existing = mcpRepository.findByCode(param.getMcpCode());
+        McpService existing = mcpRepository.findByCode(param.getMcpName());
         if (existing != null) {
-            throw new BusinessException(ErrorCode.MCP_CODE_ALREADY_EXISTS);
+            throw new BusinessException(ErrorCode.MCP_NAME_ALREADY_EXISTS);
         }
         McpService mcp = new McpService();
         BeanUtils.copyProperties(param, mcp);
@@ -35,11 +32,11 @@ public class McpCommandService {
     }
 
     public void updateMcp(UpdateMcpParam param, Long operatorId) {
-        McpService mcp = mcpRepository.findById(param.getId());
+        McpService mcp = mcpRepository.findByNum(param.getNum());
         if (mcp == null) {
             throw new BusinessException(ErrorCode.MCP_NOT_FOUND);
         }
-        BeanUtils.copyProperties(param, mcp, "id", "mcpCode");
+        BeanUtils.copyProperties(param, mcp, "num");
         mcp.setUpdateNo(String.valueOf(operatorId));
         mcpRepository.save(mcp, operatorId);
     }
@@ -77,7 +74,6 @@ public class McpCommandService {
             throw new BusinessException(ErrorCode.MCP_NOT_FOUND);
         }
         McpClientGateway.TestResult result = mcpClientGateway.testConnectivity(mcp);
-        mcp.recordTestResult(result.isSuccess(), result.getResponseTime());
         mcpRepository.save(mcp, mcp.getId());
         return new TestResult(result.isSuccess(), result.getResponseTime(), result.getErrorMessage());
     }
