@@ -1,18 +1,20 @@
-import { Button, Space, Tag, message, Popconfirm, Rate } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, RocketOutlined, DownloadOutlined } from '@ant-design/icons'
-import { ProTable, ModalForm, ProFormText, ProFormSelect, ProFormTextArea } from '@ant-design/pro-components'
-import type { ProColumns } from '@ant-design/pro-components'
-import type { SkillItem, SkillStatus, SkillCategory } from '../../types'
-import { getSkills, createSkill, updateSkill, deleteSkill, installSkill, uninstallSkill } from '../../api/skill'
-import { useState } from 'react'
+import { Button, Space, Tag, message, Popconfirm } from 'antd'
+import { PlusOutlined, EyeOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons'
+import { ProTable } from '@ant-design/pro-components'
+import type { ProColumns, ActionType } from '@ant-design/pro-components'
+import type { SkillItem } from '../../types'
+import { getSkills, deleteSkill, installSkill, uninstallSkill } from '../../api/skill'
+import { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 
-const statusMap: Record<SkillStatus, { text: string }> = {
-  '未安装': { text: '未安装' },
-  '已安装': { text: '已安装' },
-  '有更新可用': { text: '有更新' },
+const STATUS_MAP: Record<string, { text: string; color: string }> = {
+  NOT_INSTALLED: { text: '未安装', color: 'default' },
+  INSTALLED: { text: '已安装', color: 'green' },
+  DISABLED: { text: '已禁用', color: 'default' },
 }
 
-const SKILL_CATEGORY_OPTIONS: Record<string, { text: string }> = {
+const CATEGORY_OPTIONS: Record<string, { text: string }> = {
   '数据处理': { text: '数据处理' },
   '工具调用': { text: '工具调用' },
   '内容生成': { text: '内容生成' },
@@ -21,75 +23,95 @@ const SKILL_CATEGORY_OPTIONS: Record<string, { text: string }> = {
   '自定义': { text: '自定义' },
 }
 
-const SKILL_STATUS_OPTIONS: Record<string, { text: string }> = {
-  '未安装': { text: '未安装' },
-  '已安装': { text: '已安装' },
-  '有更新可用': { text: '有更新' },
+const ellipsisStyle: React.CSSProperties = {
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
 }
 
 function toSkillItem(vo: Record<string, unknown>): SkillItem {
   const tags = vo.tags ? String(vo.tags).split(',').filter(Boolean) : []
+  const rawStatus = String(vo.status || 'NOT_INSTALLED')
+  const statusInfo = STATUS_MAP[rawStatus] || STATUS_MAP.NOT_INSTALLED
   return {
     skillId: String(vo.id || ''),
     num: String(vo.num || ''),
+    skillCode: String(vo.skillCode || ''),
     skillName: String(vo.skillName || ''),
     description: String(vo.description || ''),
-    category: (vo.category as SkillCategory) || '自定义',
+    category: (vo.category as SkillItem['category']) || '自定义',
     tags,
     version: String(vo.version || ''),
     author: String(vo.author || ''),
     installCount: Number(vo.installCount || 0),
     rating: Number(vo.rating || 0),
     ratingCount: Number(vo.ratingCount || 0),
-    status: (vo.status as SkillStatus) || '未安装',
+    status: statusInfo.text as '未安装' | '已安装' | '已禁用',
+    _rawStatus: rawStatus,
     isOfficial: Boolean(vo.isOfficial),
     isFree: Boolean(vo.isFree),
-    createTime: String(vo.createTime || ''),
+    createTime: vo.createTime ? new Date(vo.createTime as number).toLocaleString('zh-CN') : '',
     updater: String(vo.updateNo || ''),
-    updateTime: String(vo.updateTime || ''),
+    updateTime: vo.updateTime ? new Date(vo.updateTime as number).toLocaleString('zh-CN') : '',
   }
 }
 
-export default function SkillStore() {
-  const [current, setCurrent] = useState<SkillItem | null>(null)
+export default function SkillManagement() {
+  const actionRef = useRef<ActionType>()
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const reload = () => { actionRef.current?.reload() }
 
   const columns: ProColumns<SkillItem>[] = [
     {
       title: 'Skill名称',
       dataIndex: 'skillName',
       width: 150,
+      ellipsis: true,
+      fieldProps: { style: ellipsisStyle },
+    },
+    {
+      title: 'Skill编码',
+      dataIndex: 'skillCode',
+      width: 140,
+      search: false,
+      ellipsis: true,
+      fieldProps: { style: ellipsisStyle },
     },
     {
       title: '分类',
       dataIndex: 'category',
-      width: 100,
-      valueEnum: SKILL_CATEGORY_OPTIONS,
-      render: (_, r) => <Tag>{r.category}</Tag>,
-    },
-    {
-      title: '描述',
-      dataIndex: 'description',
-      ellipsis: true,
-      search: false,
+      width: 110,
+      valueEnum: CATEGORY_OPTIONS,
     },
     {
       title: '状态',
       dataIndex: 'status',
-      width: 100,
-      valueEnum: SKILL_STATUS_OPTIONS,
-      render: (_, r) => <Tag color={r.status === '已安装' ? 'green' : r.status === '有更新可用' ? 'orange' : 'default'}>{statusMap[r.status].text}</Tag>,
+      width: 90,
+      valueEnum: {
+        '未安装': { text: '未安装' },
+        '已安装': { text: '已安装' },
+        '已禁用': { text: '已禁用' },
+      },
+      render: (_, r) => {
+        const info = STATUS_MAP[r._rawStatus || ''] || STATUS_MAP.NOT_INSTALLED
+        return <Tag color={info.color}>{info.text}</Tag>
+      },
     },
     {
       title: '版本',
       dataIndex: 'version',
       width: 100,
       search: false,
+      ellipsis: true,
     },
     {
       title: '作者',
       dataIndex: 'author',
-      width: 80,
+      width: 100,
       search: false,
+      ellipsis: true,
     },
     {
       title: '安装次数',
@@ -102,32 +124,44 @@ export default function SkillStore() {
       dataIndex: 'rating',
       width: 120,
       search: false,
-      render: (_, r) => <Rate disabled allowHalf defaultValue={r.rating} />,
+      render: (_, r) => r.rating > 0 ? `${r.rating.toFixed(1)} (${r.ratingCount})` : '-',
+    },
+    {
+      title: '描述',
+      dataIndex: 'description',
+      width: 200,
+      search: false,
+      ellipsis: true,
+      render: (_, r) => <span title={r.description || ''} style={ellipsisStyle}>{r.description || '-'}</span>,
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'createTime',
+      width: 170,
+      search: false,
     },
     {
       title: '操作',
       key: 'action',
-      width: 260,
+      width: 200,
       fixed: 'right',
       search: false,
       render: (_, r) => (
         <Space>
-          <Button type="link" size="small" onClick={() => message.info('详情开发中')}>详情</Button>
-          {r.status === '未安装' && (
+          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => navigate(`/skills/${r.num}`, { state: { fromList: true, search: searchParams.toString() } })}>详情</Button>
+          {r._rawStatus === 'NOT_INSTALLED' && (
             <Button type="link" size="small" icon={<DownloadOutlined />} onClick={() => handleInstall(r)}>安装</Button>
           )}
-          {r.status === '已安装' && (
+          {r._rawStatus === 'INSTALLED' && (
             <Popconfirm title="确定卸载？" onConfirm={() => handleUninstall(r)}>
               <Button type="link" size="small" danger>卸载</Button>
             </Popconfirm>
           )}
-          {r.status === '有更新可用' && (
-            <Button type="link" size="small" icon={<RocketOutlined />} onClick={() => handleInstall(r)}>更新</Button>
+          {r._rawStatus === 'DISABLED' && (
+            <Popconfirm title="确定删除？" onConfirm={() => handleDelete(r)}>
+              <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+            </Popconfirm>
           )}
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => { setCurrent(r) }}>编辑</Button>
-          <Popconfirm title="确定删除？" onConfirm={() => handleDelete(r)}>
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
-          </Popconfirm>
         </Space>
       ),
     },
@@ -137,6 +171,7 @@ export default function SkillStore() {
     try {
       await installSkill(record.num!)
       message.success('安装成功')
+      reload()
     } catch {
       message.error('安装失败')
     }
@@ -146,6 +181,7 @@ export default function SkillStore() {
     try {
       await uninstallSkill(record.num!)
       message.success('卸载成功')
+      reload()
     } catch {
       message.error('卸载失败')
     }
@@ -155,79 +191,52 @@ export default function SkillStore() {
     try {
       await deleteSkill(record.num!)
       message.success('删除成功')
+      reload()
     } catch {
       message.error('删除失败')
     }
   }
 
   return (
-    <>
-      <ProTable<SkillItem>
-        columns={columns}
-        rowKey="skillId"
-        scroll={{ x: 1200 }}
-        request={async (params) => {
-          const res = await getSkills({
-            pageNo: params.current ?? 1,
-            pageSize: params.pageSize ?? 10,
-            ...params,
-          } as Record<string, unknown>)
-          const records = (res.data.data?.records as unknown as Record<string, unknown>[]) || []
-          return {
-            data: records.map(toSkillItem),
-            success: true,
-            total: Number(res.data.data?.total || 0),
-          }
-        }}
-        headerTitle="Skill商店"
-        toolBarRender={() => [
-          <Button key="add" type="primary" icon={<PlusOutlined />} onClick={() => { setCurrent(null) }}>
-            新增Skill
-          </Button>,
-        ]}
-        pagination={{
-          showSizeChanger: true,
-          showTotal: (t) => `共 ${t} 条`,
-        }}
-      />
-
-      <ModalForm<{ skillName: string; description: string; category: string }>
-        title={current ? '编辑Skill' : '新增Skill'}
-        open={!!current}
-        onOpenChange={(open) => { if (!open) setCurrent(null) }}
-        onFinish={async (values) => {
-          try {
-            if (current?.skillId) {
-              await updateSkill({ ...values, id: current.skillId })
-              message.success('修改成功')
-            } else {
-              await createSkill(values)
-              message.success('创建成功')
-            }
-            setCurrent(null)
-            return true
-          } catch {
-            message.error('操作失败')
-            return false
-          }
-        }}
-      >
-        <ProFormText name="skillName" label="Skill名称" rules={[{ required: true }]} placeholder="2-50字符" />
-        <ProFormTextArea name="description" label="描述" rules={[{ required: true }]} />
-        <ProFormSelect
-          name="category"
-          label="分类"
-          rules={[{ required: true }]}
-          options={[
-            { label: '数据处理', value: '数据处理' },
-            { label: '工具调用', value: '工具调用' },
-            { label: '内容生成', value: '内容生成' },
-            { label: '搜索查询', value: '搜索查询' },
-            { label: '系统集成', value: '系统集成' },
-            { label: '自定义', value: '自定义' },
-          ]}
-        />
-      </ModalForm>
-    </>
+    <ProTable<SkillItem>
+      actionRef={actionRef}
+      columns={columns}
+      rowKey="num"
+      scroll={{ x: 1600 }}
+      search={{
+        labelWidth: 'auto',
+      }}
+      request={async (params) => {
+        const { skillName, category, status, current, pageSize } = params
+        const apiParams: Record<string, unknown> = {
+          pageNo: current ?? 1,
+          pageSize: pageSize ?? 10,
+        }
+        if (skillName) apiParams.keyword = skillName
+        if (category) apiParams.category = category
+        if (status) {
+          const statusMapReverse: Record<string, string> = { '未安装': 'NOT_INSTALLED', '已安装': 'INSTALLED', '已禁用': 'DISABLED' }
+          apiParams.status = statusMapReverse[String(status)] || status
+        }
+        setSearchParams(apiParams as Record<string, string>, { replace: true })
+        const res = await getSkills(apiParams)
+        const records = (res.data.data?.records as unknown as Record<string, unknown>[]) || []
+        return {
+          data: records.map(toSkillItem),
+          success: true,
+          total: Number(res.data.data?.total || 0),
+        }
+      }}
+      headerTitle="Skill管理"
+      toolBarRender={() => [
+        <Button key="add" type="primary" icon={<PlusOutlined />} onClick={() => navigate('/skills/new', { state: { fromList: true, search: searchParams.toString() } })}>
+          新增Skill
+        </Button>,
+      ]}
+      pagination={{
+        showSizeChanger: true,
+        showTotal: (t) => `共 ${t} 条`,
+      }}
+    />
   )
 }

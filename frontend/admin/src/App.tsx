@@ -8,7 +8,9 @@ import UserManagement from './pages/UserManagement'
 import UserDetail from './pages/UserManagement/detail'
 import PermissionManagement from './pages/PermissionManagement'
 import SkillStore from './pages/SkillStore'
+import SkillDetail from './pages/SkillStore/detail'
 import MCPManagement from './pages/MCPManagement'
+import MCPDetail from './pages/MCPManagement/detail'
 import ModelManagement from './pages/ModelManagement'
 import ModelDetail from './pages/ModelManagement/detail'
 import SystemSettings from './pages/SystemSettings'
@@ -35,7 +37,11 @@ function App() {
         <Route path="users/detail/:num" element={<UserDetail />} />
         <Route path="permissions" element={<PermissionManagement />} />
         <Route path="skills" element={<SkillStore />} />
+        <Route path="skills/new" element={<SkillDetail />} />
+        <Route path="skills/:num" element={<SkillDetail />} />
         <Route path="mcps" element={<MCPManagement />} />
+        <Route path="mcps/new" element={<MCPDetail />} />
+        <Route path="mcps/:num" element={<MCPDetail />} />
         <Route path="models" element={<ModelManagement />} />
         <Route path="models/:num" element={<ModelDetail />} />
         <Route path="settings" element={<SystemSettings />} />

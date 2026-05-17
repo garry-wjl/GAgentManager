@@ -66,7 +66,10 @@ public class SkillRepositoryImpl implements SkillRepository {
     @Override
     public void delete(String num, Long operatorId) {
         Skill skill = findByNum(num);
-        if (skill != null) { skill.delete(operatorId); mapper.updateById(toEntity(skill)); }
+        if (skill != null) {
+            skill.delete(operatorId);
+            mapper.deleteById(skill.getId());
+        }
     }
 
     @Override
