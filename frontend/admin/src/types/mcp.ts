@@ -1,33 +1,52 @@
 export interface MCPItem {
   mcpId: string
   num?: string
-  mcpCode?: string
   mcpName: string
-  description?: string
-  latestVersion?: string
-  currentVersion?: string
-  isEnabled?: boolean
+  description: string
+  feature?: string
+  tags?: string
+  source: MCPSource
   status: MCPStatus
   _rawStatus?: string
+  icon?: string
+  configJson?: string
+  requestHeaders?: string
   boundAgentCount?: number
-  serverUrl?: string
-  protocolVersion?: string
-  transportType?: string
-  authType?: string
-  timeoutSeconds?: number
-  retryEnabled?: boolean
-  maxRetries?: number
-  healthCheckUrl?: string
-  healthCheckInterval?: number
-  lastConnectTime?: string
-  errorCount?: number
   creator?: string
   createTime: string
   updater?: string
   updateTime: string
 }
 
-export type MCPStatus = '已启用' | '已禁用' | '异常'
+export type MCPSource = 'MCP_GATEWAY' | 'MANUAL'
+export type MCPStatus = '草稿' | '已启用' | '已禁用'
+
+export interface MCPToolItem {
+  name: string
+  description: string
+  inputParams: ParamNode[]
+  outputParams: ParamNode[]
+}
+
+export interface ParamNode {
+  fieldName: string
+  type: string
+  description: string
+  children?: ParamNode[]
+}
+
+export interface MCPFormValues {
+  mcpName: string
+  description: string
+  feature?: string
+  tags?: string
+  icon?: string
+  source?: string
+  status?: string
+  configType: 'SSE' | 'STREAMABLE_HTTP'
+  configUrl?: string
+  headers?: Array<{ key: string; value: string }>
+}
 
 export interface MCPVersion {
   versionId: string
@@ -40,24 +59,4 @@ export interface MCPVersion {
   publishTime?: string
   createTime: string
   isCurrentVersion: boolean
-}
-
-export interface MCPFormValues {
-  mcpCode?: string
-  mcpName: string
-  description?: string
-  serverUrl: string
-  protocolVersion: string
-  transportType: string
-  authType: string
-  credentials?: string
-  timeoutSeconds?: number
-  retryEnabled?: boolean
-  maxRetries?: number
-  healthCheckUrl?: string
-  healthCheckInterval?: number
-  envVariables?: string
-  command?: string
-  args?: string
-  isEnabled?: boolean
 }

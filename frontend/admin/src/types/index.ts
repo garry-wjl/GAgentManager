@@ -3,6 +3,6 @@ export type { UserInfo, UserListItem, UserFormValues, UserStatus, UserSource } f
 export type { AgentItem, AgentFormValues, AgentVersionItem, AgentType, AgentStatus, VersionTag, AgentDetailVO, AgentResourceBinding, BindModelParam, BindResourceParamV2, UpdateBindingSortParam, BindingSortItem, EnabledModelVO, WorkflowOption, SkillOption } from './agent'
 export type { RoleItem, PermissionResource, PermissionAction, RolePermission, UserRoleAssignment, UserPermissionResult } from './permission'
 export type { SkillItem, SkillVersion, SkillCategory, SkillStatus } from './skill'
-export type { MCPItem, MCPVersion, MCPFormValues, MCPStatus } from './mcp'
+export type { MCPItem, MCPVersion, MCPFormValues, MCPStatus, MCPToolItem, ParamNode } from './mcp'
 export type { ModelItem, ModelFormValues, ModelMonitoring, ModelProvider, ModelApiType, ModelStatus } from './model'
 export type { SystemConfig, SystemParams } from './system'

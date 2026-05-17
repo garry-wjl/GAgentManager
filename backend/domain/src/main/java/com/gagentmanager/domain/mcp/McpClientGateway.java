@@ -1,8 +1,14 @@
 package com.gagentmanager.domain.mcp;
 
-/** MCP 客户端网关接口，定义与外部 MCP 服务通信的连通性测试能力 */
+import com.gagentmanager.client.mcp.ToolVO;
+
+import java.util.List;
+
+/** MCP 客户端网关接口，定义与外部 MCP 服务通信的连通性测试和工具获取能力 */
 public interface McpClientGateway {
     TestResult testConnectivity(McpService mcp);
+
+    List<ToolVO> fetchTools(McpService mcp);
 
     class TestResult {
         private final boolean success;

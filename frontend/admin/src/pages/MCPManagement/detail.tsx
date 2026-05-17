@@ -1,44 +1,40 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { Button, Space, Tag, message, Popconfirm, Form, Input, Select, Descriptions, Card, Radio } from 'antd'
+import { Button, Space, Tag, message, Popconfirm, Form, Input, Select, Descriptions, Radio, Tabs, Table, Tooltip, Tree } from 'antd'
 import type { DescriptionsProps } from 'antd'
-import { EditOutlined, SaveOutlined, DeleteOutlined, StopOutlined, PlayCircleOutlined, ThunderboltOutlined } from '@ant-design/icons'
+import type { ColumnsType } from 'antd/es/table'
+import { EditOutlined, SaveOutlined, DeleteOutlined, StopOutlined, PlayCircleOutlined, ThunderboltOutlined, PlusOutlined, MinusCircleOutlined } from '@ant-design/icons'
 import { PageContainer } from '@ant-design/pro-components'
-import { getMCP, getMCPByNum, createMCP, updateMCP, deleteMCP, enableMCP, disableMCP, testMCP } from '../../api/mcp'
-import type { MCPItem, MCPFormValues } from '../../types'
+import { getMCPByNum, createMCP, updateMCP, deleteMCP, enableMCP, disableMCP, testMCP, getMCPTools } from '../../api/mcp'
+import type { MCPItem, MCPFormValues, MCPToolItem, ParamNode } from '../../types'
 
 const STATUS_MAP: Record<string, { text: string; color: string }> = {
-  UNCONNECTED: { text: '未连接', color: 'default' },
-  CONNECTED: { text: '已连接', color: 'green' },
-  ERROR: { text: '异常', color: 'red' },
+  DRAFT: { text: '草稿', color: 'default' },
+  ENABLED: { text: '已启用', color: 'green' },
+  DISABLED: { text: '已禁用', color: 'default' },
 }
 
 const FORM_LAYOUT = {
   labelCol: { span: 4 },
-  wrapperCol: { span: 12 },
+  wrapperCol: { span: 14 },
 }
 
 function toMCPItem(vo: Record<string, unknown>): MCPItem {
-  const rawStatus = String(vo.status || 'UNCONNECTED')
-  const statusInfo = STATUS_MAP[rawStatus] || STATUS_MAP.UNCONNECTED
+  const rawStatus = String(vo.status || 'DRAFT')
+  const statusInfo = STATUS_MAP[rawStatus] || STATUS_MAP.DRAFT
   return {
     mcpId: String(vo.id || ''),
     num: String(vo.num || ''),
-    mcpCode: String(vo.mcpCode || ''),
     mcpName: String(vo.mcpName || ''),
     description: String(vo.description || ''),
-    status: statusInfo.text as '已启用' | '已禁用' | '异常',
+    feature: String(vo.feature || ''),
+    tags: String(vo.tags || ''),
+    source: String(vo.source || 'MANUAL') as 'MCP_GATEWAY' | 'MANUAL',
+    status: statusInfo.text as '草稿' | '已启用' | '已禁用',
     _rawStatus: rawStatus,
-    isEnabled: Boolean(vo.isEnabled),
-    serverUrl: String(vo.serverUrl || ''),
-    protocolVersion: String(vo.protocolVersion || ''),
-    transportType: String(vo.transportType || ''),
-    authType: String(vo.authType || ''),
-    timeoutSeconds: Number(vo.timeoutSeconds || 30),
-    retryEnabled: Boolean(vo.retryEnabled),
-    maxRetries: Number(vo.maxRetries || 0),
-    healthCheckUrl: String(vo.healthCheckUrl || ''),
-    healthCheckInterval: Number(vo.healthCheckInterval || 0),
+    icon: String(vo.icon || ''),
+    configJson: String(vo.configJson || ''),
+    requestHeaders: String(vo.requestHeaders || ''),
     boundAgentCount: Number(vo.boundAgentCount || 0),
     creator: String(vo.creator || ''),
     createTime: vo.createTime ? new Date(vo.createTime as number).toLocaleString('zh-CN') : '',
@@ -46,6 +42,54 @@ function toMCPItem(vo: Record<string, unknown>): MCPItem {
     updateTime: vo.updateTime ? new Date(vo.updateTime as number).toLocaleString('zh-CN') : '',
   }
 }
+
+function parseConfig(configJson: string) {
+  try {
+    if (!configJson) return { type: 'SSE' as const, url: '', headers: [] }
+    const c = JSON.parse(configJson)
+    return { type: c.type || 'SSE', url: c.url || '', headers: c.headers || [] }
+  } catch {
+    return { type: 'SSE' as const, url: '', headers: [] }
+  }
+}
+
+function parseHeaders(headersStr: string) {
+  try {
+    if (!headersStr) return []
+    return JSON.parse(headersStr) as Array<{ key: string; value: string }>
+  } catch {
+    return []
+  }
+}
+
+function renderParamTree(nodes: ParamNode[] | undefined) {
+  if (!nodes || nodes.length === 0) return '-'
+  const treeData = nodes.map((n) => ({
+    key: n.fieldName,
+    title: <span><b>{n.fieldName}</b> <Tag style={{ marginLeft: 4 }}>{n.type}</Tag>{n.description && <Tooltip title={n.description}><span style={{ marginLeft: 4, color: '#999' }}>{n.description}</span></Tooltip>}</span>,
+    children: n.children?.length ? renderParamTreeData(n.children) : undefined,
+  }))
+  return <Tree treeData={treeData as any} showLine defaultExpandAll selectable={false} />
+}
+
+function renderParamTreeData(nodes: ParamNode[]): Array<{ key: string; title: React.ReactNode; children?: unknown[] }> {
+  return nodes.map((n) => ({
+    key: n.fieldName,
+    title: <span><b>{n.fieldName}</b> <Tag style={{ marginLeft: 4 }}>{n.type}</Tag>{n.description && <Tooltip title={n.description}><span style={{ marginLeft: 4, color: '#999' }}>{n.description}</span></Tooltip>}</span>,
+    children: n.children?.length ? renderParamTreeData(n.children) : undefined,
+  }))
+}
+
+const statusEnumOptions = [
+  { label: '草稿', value: '草稿' },
+  { label: '已启用', value: '已启用' },
+  { label: '已禁用', value: '已禁用' },
+]
+
+const sourceOptions = [
+  { label: '人工导入', value: 'MANUAL' },
+  { label: 'MCP网关', value: 'MCP_GATEWAY' },
+]
 
 export default function MCPDetail() {
   const navigate = useNavigate()
@@ -58,6 +102,9 @@ export default function MCPDetail() {
   const [mcp, setMcp] = useState<MCPItem | null>(null)
   const [editing, setEditing] = useState(false)
   const [form] = Form.useForm()
+  const [tools, setTools] = useState<MCPToolItem[]>([])
+  const [toolsLoading, setToolsLoading] = useState(false)
+  const headers = Form.useWatch('headers', form)
 
   const listState = (location.state as { fromList?: boolean; search?: string } | null)
   const listBackUrl = listState?.fromList ? `/mcps?${listState.search || ''}` : '/mcps'
@@ -70,21 +117,38 @@ export default function MCPDetail() {
 
   useEffect(() => {
     if (editing && mcp) {
+      const cfg = parseConfig(mcp.configJson || '')
+      const hdrs = parseHeaders(mcp.requestHeaders || '')
       form.setFieldsValue({
         mcpName: mcp.mcpName,
         description: mcp.description,
-        serverUrl: mcp.serverUrl,
-        protocolVersion: mcp.protocolVersion,
-        transportType: mcp.transportType,
-        authType: mcp.authType,
-        timeoutSeconds: mcp.timeoutSeconds,
-        retryEnabled: mcp.retryEnabled,
-        maxRetries: mcp.maxRetries,
-        healthCheckUrl: mcp.healthCheckUrl,
-        healthCheckInterval: mcp.healthCheckInterval,
+        feature: mcp.feature,
+        tags: mcp.tags,
+        source: mcp.source,
+        status: mcp.status,
+        icon: mcp.icon,
+        configType: cfg.type,
+        configUrl: cfg.url,
+        headers: hdrs.length ? hdrs : [{ key: '', value: '' }],
       })
     }
   }, [editing, mcp])
+
+  useEffect(() => {
+    if (isNew) {
+      form.setFieldsValue({
+        source: 'MANUAL',
+        status: '草稿',
+        configType: 'SSE',
+      })
+    }
+  }, [isNew])
+
+  useEffect(() => {
+    if (mcp && !isNew && !editing) {
+      loadTools()
+    }
+  }, [mcp, isNew, editing])
 
   const loadDetail = async () => {
     if (!num) return
@@ -105,21 +169,60 @@ export default function MCPDetail() {
     }
   }
 
+  const loadTools = async () => {
+    if (!num) return
+    setToolsLoading(true)
+    try {
+      const res = await getMCPTools(num)
+      setTools((res.data.data as MCPToolItem[]) || [])
+    } catch {
+      // 工具列表加载失败不影响页面展示
+    } finally {
+      setToolsLoading(false)
+    }
+  }
+
+  const buildPayload = (values: Record<string, unknown>) => {
+    const cfg: Record<string, unknown> = {
+      type: values.configType,
+      url: values.configUrl,
+      headers: (values.headers as Array<{ key: string; value: string }> || []).filter((h) => h.key),
+    }
+    return {
+      mcpName: values.mcpName,
+      description: values.description,
+      feature: values.feature,
+      tags: values.tags,
+      icon: values.icon,
+      source: values.source || 'MANUAL',
+      status: mapStatusToBackend(values.status as string),
+      configJson: JSON.stringify(cfg),
+      requestHeaders: JSON.stringify((values.headers as Array<{ key: string; value: string }> || []).filter((h) => h.key)),
+    }
+  }
+
+  const mapStatusToBackend = (status: string) => {
+    const map: Record<string, string> = { '草稿': 'DRAFT', '已启用': 'ENABLED', '已禁用': 'DISABLED' }
+    return map[status] || 'DRAFT'
+  }
+
   const handleSave = async (values: Record<string, unknown>) => {
     setSaving(true)
     try {
+      const payload = buildPayload(values)
       if (isNew) {
-        await createMCP(values as unknown as MCPFormValues)
+        await createMCP(payload as unknown as MCPFormValues)
         message.success('创建成功')
         navigate(listBackUrl)
       } else {
-        await updateMCP({ ...values, id: mcp!.mcpId } as any)
+        await updateMCP({ ...payload, num: mcp!.num } as any)
         message.success('保存成功')
         setEditing(false)
         loadDetail()
       }
-    } catch {
-      // 请求失败
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : '操作失败'
+      message.error(msg)
     } finally {
       setSaving(false)
     }
@@ -164,20 +267,20 @@ export default function MCPDetail() {
       const res = await testMCP(mcp.num)
       const result = res.data.data
       if (result?.success) {
-        const latency = result.connectLatencyMs ? `${result.connectLatencyMs}ms` : ''
-        message.success(`连通性测试通过${latency ? `，延迟 ${latency}` : ''}`)
+        message.success('连通性测试通过')
+        loadTools()
+        loadDetail()
       } else {
         message.error(`连通性测试失败：${result?.errorMessage || '未知错误'}`)
       }
-      loadDetail()
     } catch {
       message.error('连通性测试失败')
-      loadDetail()
     }
   }
 
-  const statusInfo = mcp ? STATUS_MAP[mcp._rawStatus || ''] || STATUS_MAP.UNCONNECTED : null
+  const statusInfo = mcp ? STATUS_MAP[mcp._rawStatus || ''] || STATUS_MAP.DRAFT : null
   const pageTitle = isNew ? '新增MCP' : (editing ? '编辑MCP' : 'MCP详情')
+  const isEditMode = isNew || editing
 
   const extraActions = isNew ? (
     <Space>
@@ -192,13 +295,16 @@ export default function MCPDetail() {
   ) : (
     <Space>
       <Button type="primary" icon={<EditOutlined />} onClick={() => setEditing(true)}>编辑</Button>
-      <Button icon={<ThunderboltOutlined />} onClick={handleTest}>测试连接</Button>
-      {mcp?.isEnabled && (
+      <Button icon={<ThunderboltOutlined />} onClick={handleTest}>测试连通性</Button>
+      {mcp?.status === '草稿' && (
+        <Button type="primary" icon={<PlayCircleOutlined />} onClick={handleEnable}>启用</Button>
+      )}
+      {mcp?.status === '已启用' && (
         <Popconfirm title="确定禁用？" onConfirm={handleDisable}>
           <Button icon={<StopOutlined />}>禁用</Button>
         </Popconfirm>
       )}
-      {mcp?.isEnabled === false && (
+      {mcp?.status === '已禁用' && (
         <>
           <Button type="primary" icon={<PlayCircleOutlined />} onClick={handleEnable}>启用</Button>
           <Popconfirm title="确定删除？" onConfirm={handleDelete}>
@@ -209,102 +315,186 @@ export default function MCPDetail() {
     </Space>
   )
 
-  const BaseInfoContent = () => {
+  const toolColumns: ColumnsType<MCPToolItem> = [
+    { title: '名称', dataIndex: 'name', width: 180, ellipsis: true },
+    { title: '描述', dataIndex: 'description', ellipsis: true },
+    {
+      title: '入参',
+      dataIndex: 'inputParams',
+      width: 350,
+      render: (params: ParamNode[]) => renderParamTree(params),
+    },
+    {
+      title: '出参',
+      dataIndex: 'outputParams',
+      width: 350,
+      render: (params: ParamNode[]) => renderParamTree(params),
+    },
+  ]
+
+  const basicFormItems = (
+    <>
+      <Form.Item label="名称" name="mcpName" rules={[{ required: true, message: '请输入名称' }]}>
+        <Input placeholder="2-50字符" maxLength={50} />
+      </Form.Item>
+      <Form.Item label="描述" name="description" rules={[{ required: true, message: '请输入描述' }]}>
+        <Input.TextArea placeholder="请输入描述" rows={3} maxLength={500} showCount />
+      </Form.Item>
+      <Form.Item label="功能介绍" name="feature">
+        <Input.TextArea placeholder="可选" rows={3} maxLength={2000} showCount />
+      </Form.Item>
+      <Form.Item label="标签" name="tags">
+        <Input placeholder="多个标签用逗号分隔" />
+      </Form.Item>
+      <Form.Item label="来源" name="source">
+        <Select options={sourceOptions} />
+      </Form.Item>
+      <Form.Item label="状态" name="status">
+        <Select options={statusEnumOptions} />
+      </Form.Item>
+      <Form.Item label="图标" name="icon">
+        <Input placeholder="图标URL或Emoji" />
+      </Form.Item>
+    </>
+  )
+
+  const configFormItems = (
+    <>
+      <Form.Item label="类型" name="configType" rules={[{ required: true, message: '请选择类型' }]}>
+        <Radio.Group>
+          <Radio value="SSE">SSE</Radio>
+          <Radio value="STREAMABLE_HTTP">STREAMABLE HTTP</Radio>
+        </Radio.Group>
+      </Form.Item>
+      <Form.Item label="URL" name="configUrl">
+        <Input placeholder="https://mcp.example.com/mcp" />
+      </Form.Item>
+      <Form.Item label="请求头" name="headers">
+        <Form.List name="headers">
+          {(fields, { add, remove }) => (
+            <div style={{ width: '100%' }}>
+              {fields.map(({ key, name, ...restField }) => (
+                <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
+                  <Form.Item {...restField} name={[name, 'key']} style={{ width: 200 }}>
+                    <Input placeholder="Key" />
+                  </Form.Item>
+                  <Form.Item {...restField} name={[name, 'value']} style={{ width: 300 }}>
+                    <Input placeholder="Value" />
+                  </Form.Item>
+                  <MinusCircleOutlined onClick={() => remove(name)} />
+                </Space>
+              ))}
+              <Button type="dashed" onClick={() => add({ key: '', value: '' })} block icon={<PlusOutlined />}>
+                添加请求头
+              </Button>
+            </div>
+          )}
+        </Form.List>
+      </Form.Item>
+    </>
+  )
+
+  const BasicInfoDetail = () => {
     if (!mcp) return null
     const items: DescriptionsProps['items'] = [
-      { key: 'mcpName', label: '服务名称', children: mcp.mcpName },
-      { key: 'mcpCode', label: '服务编码', children: mcp.mcpCode },
-      { key: 'status', label: '连接状态', children: <Tag color={statusInfo?.color}>{statusInfo?.text}</Tag> },
-      { key: 'isEnabled', label: '启用状态', children: mcp.isEnabled ? <Tag color="green">已启用</Tag> : <Tag color="default">已禁用</Tag> },
-      { key: 'serverUrl', label: '服务器地址', children: mcp.serverUrl || '-' },
-      { key: 'protocolVersion', label: '协议版本', children: mcp.protocolVersion || '-' },
-      { key: 'transportType', label: '传输类型', children: mcp.transportType || '-' },
-      { key: 'authType', label: '认证方式', children: mcp.authType || '-' },
-      { key: 'timeoutSeconds', label: '超时时间(秒)', children: mcp.timeoutSeconds ?? 30 },
-      { key: 'retryEnabled', label: '重试开关', children: mcp.retryEnabled ? '开启' : '关闭' },
-      { key: 'maxRetries', label: '最大重试次数', children: mcp.maxRetries ?? 0 },
-      { key: 'healthCheckUrl', label: '健康检查地址', children: mcp.healthCheckUrl || '-' },
-      { key: 'healthCheckInterval', label: '健康检查间隔(秒)', children: mcp.healthCheckInterval || '-' },
-      { key: 'boundAgentCount', label: '绑定Agent数', children: mcp.boundAgentCount ?? 0 },
-      { key: 'description', label: '描述', children: mcp.description || '-', span: 2 },
-      { key: 'createTime', label: '创建时间', children: mcp.createTime },
-      { key: 'creator', label: '创建人', children: mcp.creator },
-      { key: 'updater', label: '更新人', children: mcp.updater },
+      { key: 'mcpName', label: '名称', children: mcp.mcpName },
+      { key: 'description', label: '描述', children: mcp.description || '-' },
+      { key: 'feature', label: '功能介绍', children: mcp.feature || '-' },
+      { key: 'tags', label: '标签', children: mcp.tags || '-' },
+      { key: 'source', label: '来源', children: mcp.source === 'MCP_GATEWAY' ? 'MCP网关' : '人工导入' },
+      { key: 'status', label: '状态', children: <Tag color={statusInfo?.color}>{statusInfo?.text}</Tag> },
+      { key: 'icon', label: '图标', children: mcp.icon ? <img src={mcp.icon} alt="" style={{ width: 32, height: 32 }} /> : '-' },
     ]
     return <Descriptions column={2} items={items} size="small" bordered />
   }
 
-  const MCPForm = () => (
-    <Card bordered={false}>
-      <Form
-        {...FORM_LAYOUT}
-        form={form}
-        onFinish={handleSave}
-        style={{ maxWidth: 'none' }}
-        initialValues={{ transportType: 'SSE', protocolVersion: '2024-11-05', timeoutSeconds: 30, retryEnabled: false, maxRetries: 0 }}
-      >
-        <Form.Item label="服务名称" name="mcpName" rules={[{ required: true, message: '请输入服务名称' }]}>
-          <Input placeholder="2-50字符" maxLength={50} />
-        </Form.Item>
-        {isNew && (
-          <Form.Item label="服务编码" name="mcpCode" rules={[{ required: true, message: '请输入服务编码' }]}>
-            <Input placeholder="MCP_CODE" maxLength={50} />
-          </Form.Item>
-        )}
-        <Form.Item label="描述" name="description">
-          <Input.TextArea placeholder="可选" rows={3} maxLength={500} showCount />
-        </Form.Item>
-        <Form.Item label="服务器地址" name="serverUrl" rules={[{ required: true, message: '请输入服务器地址' }]}>
-          <Input placeholder="https://mcp.example.com/mcp" />
-        </Form.Item>
-        <Form.Item label="协议版本" name="protocolVersion" rules={[{ required: true, message: '请选择协议版本' }]}>
-          <Input placeholder="如 2024-11-05" />
-        </Form.Item>
-        <Form.Item label="传输类型" name="transportType" rules={[{ required: true, message: '请选择传输类型' }]}>
-          <Radio.Group>
-            <Radio value="SSE">SSE</Radio>
-            <Radio value="HTTP">HTTP</Radio>
-            <Radio value="STDIO">STDIO</Radio>
-          </Radio.Group>
-        </Form.Item>
-        <Form.Item label="认证方式" name="authType">
-          <Radio.Group>
-            <Radio value="NONE">无</Radio>
-            <Radio value="BEARER_TOKEN">Bearer Token</Radio>
-            <Radio value="API_KEY">API Key</Radio>
-          </Radio.Group>
-        </Form.Item>
-        {isNew && (
-          <Form.Item label="认证凭据" name="credentials">
-            <Input.Password placeholder="认证密钥/Token（加密存储）" />
-          </Form.Item>
-        )}
-        {!isNew && (
-          <Form.Item label="认证凭据" name="credentials">
-            <Input.Password placeholder="留空则不修改" />
-          </Form.Item>
-        )}
-        <Form.Item label="超时时间(秒)" name="timeoutSeconds">
-          <Input type="number" min={1} max={300} />
-        </Form.Item>
-        <Form.Item label="重试开关" name="retryEnabled" valuePropName="checked">
-          <Radio.Group>
-            <Radio value={true}>开启</Radio>
-            <Radio value={false}>关闭</Radio>
-          </Radio.Group>
-        </Form.Item>
-        <Form.Item label="最大重试次数" name="maxRetries">
-          <Input type="number" min={0} max={10} />
-        </Form.Item>
-        <Form.Item label="健康检查地址" name="healthCheckUrl">
-          <Input placeholder="https://mcp.example.com/health" />
-        </Form.Item>
-        <Form.Item label="健康检查间隔(秒)" name="healthCheckInterval">
-          <Input type="number" min={10} max={3600} />
-        </Form.Item>
-      </Form>
-    </Card>
-  )
+  const ConfigDetail = () => {
+    if (!mcp) return null
+    const cfg = parseConfig(mcp.configJson || '')
+    const hdrs = parseHeaders(mcp.requestHeaders || '')
+    const items: DescriptionsProps['items'] = [
+      { key: 'type', label: '类型', children: cfg.type },
+      { key: 'url', label: 'URL', children: cfg.url || '-' },
+      {
+        key: 'headers', label: '请求头', span: 2,
+        children: hdrs.length ? (
+          hdrs.map((h, i) => <div key={i}><b>{h.key}</b>: {h.value}</div>)
+        ) : '-',
+      },
+    ]
+    return <Descriptions column={2} items={items} size="small" bordered />
+  }
+
+  const tabItems = isEditMode ? [
+    {
+      key: 'basic',
+      label: '基础信息',
+      children: <>{basicFormItems}</>,
+    },
+    {
+      key: 'config',
+      label: 'MCP配置',
+      children: <>{configFormItems}</>,
+    },
+    {
+      key: 'tools',
+      label: '工具列表',
+      children: (
+        <div>
+          <div style={{ marginBottom: 16 }}>
+            <Button icon={<ThunderboltOutlined />} onClick={handleTest} loading={toolsLoading}>
+              测试连通性并刷新
+            </Button>
+            {isNew && <span style={{ marginLeft: 12, color: '#999' }}>请先保存MCP后点击测试连通性加载工具</span>}
+          </div>
+          <Table
+            columns={toolColumns}
+            dataSource={tools}
+            rowKey="name"
+            loading={toolsLoading}
+            pagination={false}
+            size="small"
+            scroll={{ x: 1200 }}
+            locale={{ emptyText: isNew ? '请先保存MCP后点击测试连通性加载工具' : '暂无工具数据，点击"测试连通性"加载' }}
+          />
+        </div>
+      ),
+    },
+  ] : [
+    {
+      key: 'basic',
+      label: '基础信息',
+      children: <BasicInfoDetail />,
+    },
+    {
+      key: 'config',
+      label: 'MCP配置',
+      children: <ConfigDetail />,
+    },
+    {
+      key: 'tools',
+      label: '工具列表',
+      children: (
+        <div>
+          <div style={{ marginBottom: 16 }}>
+            <Button icon={<ThunderboltOutlined />} onClick={handleTest} loading={toolsLoading}>
+              测试连通性并刷新
+            </Button>
+          </div>
+          <Table
+            columns={toolColumns}
+            dataSource={tools}
+            rowKey="name"
+            loading={toolsLoading}
+            pagination={false}
+            size="small"
+            scroll={{ x: 1200 }}
+            locale={{ emptyText: '暂无工具数据，点击"测试连通性"加载' }}
+          />
+        </div>
+      ),
+    },
+  ]
 
   return (
     <PageContainer
@@ -323,12 +513,18 @@ export default function MCPDetail() {
       }}
       loading={loading}
     >
-      {isNew ? (
-        <MCPForm />
-      ) : editing ? (
-        <MCPForm />
+      {isEditMode ? (
+        <Form
+          {...FORM_LAYOUT}
+          form={form}
+          style={{ maxWidth: 'none' }}
+          initialValues={{ source: 'MANUAL', status: '草稿', configType: 'SSE' }}
+          onFinish={handleSave}
+        >
+          <Tabs items={tabItems} />
+        </Form>
       ) : (
-        <BaseInfoContent />
+        <Tabs items={tabItems} />
       )}
     </PageContainer>
   )

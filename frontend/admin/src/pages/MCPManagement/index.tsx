@@ -4,25 +4,25 @@ import { ProTable } from '@ant-design/pro-components'
 import type { ProColumns, ActionType } from '@ant-design/pro-components'
 import type { MCPItem } from '../../types'
 import { getMCPs, deleteMCP } from '../../api/mcp'
-import { useState, useRef } from 'react'
+import { useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSearchParams } from 'react-router-dom'
 
 const STATUS_MAP: Record<string, { text: string; color: string }> = {
-  UNCONNECTED: { text: '未连接', color: 'default' },
-  CONNECTED: { text: '已连接', color: 'green' },
-  ERROR: { text: '异常', color: 'red' },
+  DRAFT: { text: '草稿', color: 'default' },
+  ENABLED: { text: '已启用', color: 'green' },
+  DISABLED: { text: '已禁用', color: 'default' },
 }
 
 const STATUS_OPTIONS: Record<string, { text: string }> = {
-  '未连接': { text: '未连接' },
-  '已连接': { text: '已连接' },
-  '异常': { text: '异常' },
+  '草稿': { text: '草稿' },
+  '已启用': { text: '已启用' },
+  '已禁用': { text: '已禁用' },
 }
 
-const ENABLE_OPTIONS: Record<string, { text: string }> = {
-  '是': { text: '是' },
-  '否': { text: '否' },
+const SOURCE_MAP: Record<string, string> = {
+  MCP_GATEWAY: 'MCP网关',
+  MANUAL: '人工导入',
 }
 
 const ellipsisStyle: React.CSSProperties = {
@@ -32,20 +32,20 @@ const ellipsisStyle: React.CSSProperties = {
 }
 
 function toMCPItem(vo: Record<string, unknown>): MCPItem {
-  const rawStatus = String(vo.status || 'UNCONNECTED')
-  const statusInfo = STATUS_MAP[rawStatus] || STATUS_MAP.UNCONNECTED
+  const rawStatus = String(vo.status || 'DRAFT')
+  const statusInfo = STATUS_MAP[rawStatus] || STATUS_MAP.DRAFT
   return {
     mcpId: String(vo.id || ''),
     num: String(vo.num || ''),
-    mcpCode: String(vo.mcpCode || ''),
     mcpName: String(vo.mcpName || ''),
-    status: statusInfo.text as '已启用' | '已禁用' | '异常',
-    _rawStatus: rawStatus,
-    isEnabled: Boolean(vo.isEnabled),
-    serverUrl: String(vo.serverUrl || ''),
-    protocolVersion: String(vo.protocolVersion || ''),
-    transportType: String(vo.transportType || ''),
-    authType: String(vo.authType || ''),
+    description: String(vo.description || ''),
+    feature: String(vo.feature || ''),
+    tags: String(vo.tags || ''),
+    source: String(vo.source || 'MANUAL') as 'MCP_GATEWAY' | 'MANUAL',
+    status: statusInfo.text as '草稿' | '已启用' | '已禁用',
+    icon: String(vo.icon || ''),
+    configJson: String(vo.configJson || ''),
+    requestHeaders: String(vo.requestHeaders || ''),
     boundAgentCount: Number(vo.boundAgentCount || 0),
     creator: String(vo.creator || ''),
     createTime: vo.createTime ? new Date(vo.createTime as number).toLocaleString('zh-CN') : '',
@@ -63,17 +63,9 @@ export default function MCPManagement() {
 
   const columns: ProColumns<MCPItem>[] = [
     {
-      title: '服务名称',
+      title: '名称',
       dataIndex: 'mcpName',
-      width: 140,
-      ellipsis: true,
-      fieldProps: { style: ellipsisStyle },
-    },
-    {
-      title: '服务编码',
-      dataIndex: 'mcpCode',
-      width: 130,
-      search: false,
+      width: 160,
       ellipsis: true,
       fieldProps: { style: ellipsisStyle },
     },
@@ -83,45 +75,35 @@ export default function MCPManagement() {
       width: 90,
       valueEnum: STATUS_OPTIONS,
       render: (_, r) => {
-        const info = STATUS_MAP[r._rawStatus || ''] || STATUS_MAP.UNCONNECTED
+        const rawStatus = String(r._rawStatus || 'DRAFT')
+        const info = STATUS_MAP[rawStatus] || STATUS_MAP.DRAFT
         return <Tag color={info.color}>{info.text}</Tag>
       },
     },
     {
-      title: '启用',
-      dataIndex: 'isEnabled',
-      width: 70,
-      valueEnum: ENABLE_OPTIONS,
+      title: '来源',
+      dataIndex: 'source',
+      width: 100,
       search: false,
-      render: (_, r) => r.isEnabled ? <Tag color="green">是</Tag> : <Tag color="default">否</Tag>,
+      render: (_, r) => SOURCE_MAP[r.source] || r.source,
     },
     {
-      title: '传输类型',
-      dataIndex: 'transportType',
-      width: 100,
+      title: '标签',
+      dataIndex: 'tags',
+      width: 150,
+      search: false,
+      ellipsis: true,
+      render: (_, r) => r.tags ? (
+        r.tags.split(',').filter(Boolean).map((t) => <Tag key={t} style={{ marginInlineEnd: 4 }}>{t.trim()}</Tag>)
+      ) : '-',
+    },
+    {
+      title: '描述',
+      dataIndex: 'description',
+      width: 200,
       search: false,
       ellipsis: true,
       fieldProps: { style: ellipsisStyle },
-    },
-    {
-      title: '协议版本',
-      dataIndex: 'protocolVersion',
-      width: 100,
-      search: false,
-    },
-    {
-      title: '服务器地址',
-      dataIndex: 'serverUrl',
-      width: 220,
-      search: false,
-      ellipsis: true,
-      render: (_, r) => <span title={r.serverUrl || ''} style={ellipsisStyle}>{r.serverUrl || '-'}</span>,
-    },
-    {
-      title: '认证方式',
-      dataIndex: 'authType',
-      width: 110,
-      search: false,
     },
     {
       title: '绑定Agent',
@@ -144,7 +126,7 @@ export default function MCPManagement() {
       render: (_, r) => (
         <Space>
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => navigate(`/mcps/${r.num}`, { state: { fromList: true, search: searchParams.toString() } })}>详情</Button>
-          {r.isEnabled === false && (
+          {(r.status === '草稿' || r.status === '已禁用') && (
             <Popconfirm title="确定删除？" onConfirm={() => handleDelete(r)}>
               <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
             </Popconfirm>
@@ -181,14 +163,18 @@ export default function MCPManagement() {
         }
         if (mcpName) apiParams.keyword = mcpName
         if (status) {
-          const statusMapReverse: Record<string, string> = { '未连接': 'UNCONNECTED', '已连接': 'CONNECTED', '异常': 'ERROR' }
+          const statusMapReverse: Record<string, string> = { '草稿': 'DRAFT', '已启用': 'ENABLED', '已禁用': 'DISABLED' }
           apiParams.status = statusMapReverse[String(status)] || status
         }
         setSearchParams(apiParams as Record<string, string>, { replace: true })
         const res = await getMCPs(apiParams)
         const records = (res.data.data?.records as unknown as Record<string, unknown>[]) || []
         return {
-          data: records.map((r) => toMCPItem(r)),
+          data: records.map((r) => {
+            const item = toMCPItem(r)
+            item._rawStatus = String(r.status || 'DRAFT')
+            return item
+          }),
           success: true,
           total: Number(res.data.data?.total || 0),
         }

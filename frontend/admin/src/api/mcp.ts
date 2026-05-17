@@ -1,5 +1,5 @@
 import { get, post } from './request'
-import type { MCPItem, MCPFormValues, PageResult } from '../types'
+import type { MCPItem, MCPFormValues, MCPToolItem, PageResult } from '../types'
 
 /** MCP 管理 API，对齐后端接口：
  * Query: /api/mcp/query/*
@@ -18,11 +18,15 @@ export function getMCP(id: string) {
   return get<MCPItem>('/mcp/query/get', { params: { id } })
 }
 
+export function getMCPTools(num: string) {
+  return get<MCPToolItem[]>('/mcp/query/tools', { params: { num } })
+}
+
 export function createMCP(data: MCPFormValues) {
   return post<MCPItem>('/mcp/command/create', data)
 }
 
-export function updateMCP(data: MCPFormValues & { id: string }) {
+export function updateMCP(data: MCPFormValues & { num: string }) {
   return post<void>('/mcp/command/update', data)
 }
 

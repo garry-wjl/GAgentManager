@@ -38,19 +38,8 @@ public class McpQueryController extends BaseController {
         return success(PageResult.of(page.getRecords(), page.getTotal(), (int) page.getCurrent(), (int) page.getSize()));
     }
 
-    @GetMapping("/versions")
-    public Result<List<McpVersionVO>> versions(@RequestParam Long mcpId) {
-        return success(mcpQueryService.listVersions(mcpId));
-    }
-
-    @GetMapping("/templates")
-    public Result<List<McpTemplateVO>> templates(@RequestParam(required = false) String category) {
-        return success(mcpQueryService.listTemplates(category));
-    }
-
-    @GetMapping("/logs")
-    public Result<PageResult<McpLogVO>> logs(PageParam pageParam, @RequestParam Long mcpId, @RequestParam(required = false) String logLevel) {
-        IPage<McpLogVO> page = mcpQueryService.listLogs(pageParam, mcpId, logLevel);
-        return success(PageResult.of(page.getRecords(), page.getTotal(), (int) page.getCurrent(), (int) page.getSize()));
+    @GetMapping("/tools")
+    public Result<List<ToolVO>> tools(@RequestParam String num) {
+        return success(mcpQueryService.listTools(num));
     }
 }

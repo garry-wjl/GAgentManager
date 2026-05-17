@@ -34,9 +34,9 @@ public class McpRepositoryImpl implements McpRepository {
     }
 
     @Override
-    public McpService findByCode(String mcpCode) {
+    public McpService findByCode(String code) {
         LambdaQueryWrapper<McpServiceEntity> qw = new LambdaQueryWrapper<McpServiceEntity>()
-                .eq(McpServiceEntity::getMcpCode, mcpCode).eq(McpServiceEntity::getDeleted, false);
+                .eq(McpServiceEntity::getMcpName, code).eq(McpServiceEntity::getDeleted, false);
         McpServiceEntity e = mapper.selectOne(qw);
         return e != null ? toDomain(e) : null;
     }
@@ -45,7 +45,7 @@ public class McpRepositoryImpl implements McpRepository {
     public IPage<McpService> list(IPage<McpService> page, String keyword, String status) {
         Page<McpServiceEntity> mpPage = new Page<>(page.getCurrent(), page.getSize());
         LambdaQueryWrapper<McpServiceEntity> qw = new LambdaQueryWrapper<McpServiceEntity>().eq(McpServiceEntity::getDeleted, false);
-        if (StringUtils.hasText(keyword)) qw.and(w -> w.like(McpServiceEntity::getMcpCode, keyword).or().like(McpServiceEntity::getMcpName, keyword));
+        if (StringUtils.hasText(keyword)) qw.and(w -> w.like(McpServiceEntity::getMcpName, keyword));
         if (StringUtils.hasText(status)) qw.eq(McpServiceEntity::getStatus, status);
         qw.orderByDesc(McpServiceEntity::getCreateTime);
         IPage<McpServiceEntity> result = mapper.selectPage(mpPage, qw);
@@ -63,14 +63,7 @@ public class McpRepositoryImpl implements McpRepository {
     @Override
     public void delete(String num, Long operatorId) {
         McpService mcp = findByNum(num);
-        if (mcp != null) { mcp.delete(operatorId); mapper.updateById(toEntity(mcp)); }
-    }
-
-    @Override
-    public List<McpService> findEnabledMcps() {
-        LambdaQueryWrapper<McpServiceEntity> qw = new LambdaQueryWrapper<McpServiceEntity>()
-                .eq(McpServiceEntity::getDeleted, false).eq(McpServiceEntity::getIsEnabled, true);
-        return mapper.selectList(qw).stream().map(this::toDomain).toList();
+        if (mcp != null) { mapper.deleteById(mcp.getId()); }
     }
 
     private McpService toDomain(McpServiceEntity e) { McpService d = new McpService(); BeanUtils.copyProperties(e, d); return d; }
