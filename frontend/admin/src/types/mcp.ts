@@ -1,22 +1,33 @@
 export interface MCPItem {
   mcpId: string
   num?: string
+  mcpCode?: string
   mcpName: string
   description?: string
-  latestVersion: string
-  currentVersion: string
-  isEnabled: boolean
+  latestVersion?: string
+  currentVersion?: string
+  isEnabled?: boolean
   status: MCPStatus
-  boundAgentCount: number
-  creator: string
-  createTime: string
-  updater: string
-  updateTime: string
+  _rawStatus?: string
+  boundAgentCount?: number
+  serverUrl?: string
+  protocolVersion?: string
+  transportType?: string
+  authType?: string
+  timeoutSeconds?: number
+  retryEnabled?: boolean
+  maxRetries?: number
+  healthCheckUrl?: string
+  healthCheckInterval?: number
   lastConnectTime?: string
-  errorCount: number
+  errorCount?: number
+  creator?: string
+  createTime: string
+  updater?: string
+  updateTime: string
 }
 
-export type MCPStatus = '未连接' | '连接中' | '已连接' | '异常'
+export type MCPStatus = '已启用' | '已禁用' | '异常'
 
 export interface MCPVersion {
   versionId: string
@@ -32,19 +43,21 @@ export interface MCPVersion {
 }
 
 export interface MCPFormValues {
+  mcpCode?: string
   mcpName: string
   description?: string
   serverUrl: string
-  protocolVersion: 'v1.0' | 'v1.1' | 'v2.0'
-  transportType: 'stdio' | 'sse' | 'http'
-  authType: '无认证' | 'API Key' | 'Bearer Token' | 'OAuth2.0' | 'Basic Auth'
-  credentials?: Record<string, string>
+  protocolVersion: string
+  transportType: string
+  authType: string
+  credentials?: string
   timeoutSeconds?: number
   retryEnabled?: boolean
   maxRetries?: number
   healthCheckUrl?: string
   healthCheckInterval?: number
-  envVariables?: Record<string, string>
+  envVariables?: string
   command?: string
-  args?: string[]
+  args?: string
+  isEnabled?: boolean
 }
