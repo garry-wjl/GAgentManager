@@ -1,132 +1,91 @@
 import { Button, Space, Tag, message, Popconfirm } from 'antd'
-import { PlusOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons'
-import { ProTable } from '@ant-design/pro-components'
-import type { ProColumns, ActionType } from '@ant-design/pro-components'
-import type { MCPItem } from '../../types'
-import { getMCPs, deleteMCP } from '../../api/mcp'
-import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useSearchParams } from 'react-router-dom'
+import { PlusOutlined, EditOutlined, DeleteOutlined, ThunderboltOutlined } from '@ant-design/icons'
+import { ProTable, ModalForm, ProFormText, ProFormSelect, ProFormDigit, ProFormTextArea } from '@ant-design/pro-components'
+import type { ProColumns } from '@ant-design/pro-components'
+import type { MCPItem, MCPStatus, MCPFormValues } from '../../types'
+import { getMCPs, createMCP, updateMCP, deleteMCP, enableMCP, disableMCP, testMCPConnection } from '../../api/mcp'
+import { useState } from 'react'
 
-const STATUS_MAP: Record<string, { text: string; color: string }> = {
-  UNCONNECTED: { text: '未连接', color: 'default' },
-  CONNECTED: { text: '已连接', color: 'green' },
-  ERROR: { text: '异常', color: 'red' },
-}
-
-const STATUS_OPTIONS: Record<string, { text: string }> = {
+const statusMap: Record<MCPStatus, { text: string }> = {
   '未连接': { text: '未连接' },
+  '连接中': { text: '连接中' },
   '已连接': { text: '已连接' },
   '异常': { text: '异常' },
 }
 
-const ENABLE_OPTIONS: Record<string, { text: string }> = {
-  '是': { text: '是' },
-  '否': { text: '否' },
-}
-
-const ellipsisStyle: React.CSSProperties = {
-  whiteSpace: 'nowrap',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
+const MCP_STATUS_OPTIONS: Record<string, { text: string }> = {
+  '未连接': { text: '未连接' },
+  '连接中': { text: '连接中' },
+  '已连接': { text: '已连接' },
+  '异常': { text: '异常' },
 }
 
 function toMCPItem(vo: Record<string, unknown>): MCPItem {
-  const rawStatus = String(vo.status || 'UNCONNECTED')
-  const statusInfo = STATUS_MAP[rawStatus] || STATUS_MAP.UNCONNECTED
   return {
     mcpId: String(vo.id || ''),
     num: String(vo.num || ''),
-    mcpCode: String(vo.mcpCode || ''),
     mcpName: String(vo.mcpName || ''),
-    status: statusInfo.text as '已启用' | '已禁用' | '异常',
-    _rawStatus: rawStatus,
+    description: String(vo.description || ''),
+    latestVersion: String(vo.latestVersion || ''),
+    currentVersion: String(vo.currentVersion || ''),
     isEnabled: Boolean(vo.isEnabled),
-    serverUrl: String(vo.serverUrl || ''),
-    protocolVersion: String(vo.protocolVersion || ''),
-    transportType: String(vo.transportType || ''),
-    authType: String(vo.authType || ''),
+    status: (vo.status as MCPStatus) || '未连接',
     boundAgentCount: Number(vo.boundAgentCount || 0),
     creator: String(vo.creator || ''),
-    createTime: vo.createTime ? new Date(vo.createTime as number).toLocaleString('zh-CN') : '',
+    createTime: String(vo.createTime || ''),
     updater: String(vo.updateNo || ''),
-    updateTime: vo.updateTime ? new Date(vo.updateTime as number).toLocaleString('zh-CN') : '',
+    updateTime: String(vo.updateTime || ''),
+    lastConnectTime: vo.lastConnectTime ? String(vo.lastConnectTime) : undefined,
+    errorCount: Number(vo.errorCount || 0),
   }
 }
 
 export default function MCPManagement() {
-  const actionRef = useRef<ActionType>()
-  const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
-
-  const reload = () => { actionRef.current?.reload() }
+  const [current, setCurrent] = useState<MCPItem | null>(null)
+  const [testingId, setTestingId] = useState<string | null>(null)
 
   const columns: ProColumns<MCPItem>[] = [
     {
       title: '服务名称',
       dataIndex: 'mcpName',
-      width: 140,
-      ellipsis: true,
-      fieldProps: { style: ellipsisStyle },
+      width: 130,
     },
     {
-      title: '服务编码',
-      dataIndex: 'mcpCode',
-      width: 130,
-      search: false,
+      title: '描述',
+      dataIndex: 'description',
       ellipsis: true,
-      fieldProps: { style: ellipsisStyle },
+      search: false,
     },
     {
       title: '状态',
       dataIndex: 'status',
-      width: 90,
-      valueEnum: STATUS_OPTIONS,
-      render: (_, r) => {
-        const info = STATUS_MAP[r._rawStatus || ''] || STATUS_MAP.UNCONNECTED
-        return <Tag color={info.color}>{info.text}</Tag>
-      },
+      width: 100,
+      valueEnum: MCP_STATUS_OPTIONS,
+      render: (_, r) => <Tag color={r.status === '已连接' ? 'green' : r.status === '异常' ? 'red' : 'default'}>{statusMap[r.status].text}</Tag>,
     },
     {
       title: '启用',
       dataIndex: 'isEnabled',
       width: 70,
-      valueEnum: ENABLE_OPTIONS,
       search: false,
-      render: (_, r) => r.isEnabled ? <Tag color="green">是</Tag> : <Tag color="default">否</Tag>,
+      render: (_, r) => r.isEnabled ? <Tag color="green">是</Tag> : <Tag color="red">否</Tag>,
     },
     {
-      title: '传输类型',
-      dataIndex: 'transportType',
+      title: '当前版本',
+      dataIndex: 'currentVersion',
       width: 100,
-      search: false,
-      ellipsis: true,
-      fieldProps: { style: ellipsisStyle },
-    },
-    {
-      title: '协议版本',
-      dataIndex: 'protocolVersion',
-      width: 100,
-      search: false,
-    },
-    {
-      title: '服务器地址',
-      dataIndex: 'serverUrl',
-      width: 220,
-      search: false,
-      ellipsis: true,
-      render: (_, r) => <span title={r.serverUrl || ''} style={ellipsisStyle}>{r.serverUrl || '-'}</span>,
-    },
-    {
-      title: '认证方式',
-      dataIndex: 'authType',
-      width: 110,
       search: false,
     },
     {
       title: '绑定Agent',
       dataIndex: 'boundAgentCount',
       width: 100,
+      search: false,
+    },
+    {
+      title: '错误次数',
+      dataIndex: 'errorCount',
+      width: 80,
       search: false,
     },
     {
@@ -138,71 +97,156 @@ export default function MCPManagement() {
     {
       title: '操作',
       key: 'action',
-      width: 160,
+      width: 300,
       fixed: 'right',
       search: false,
       render: (_, r) => (
         <Space>
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => navigate(`/mcps/${r.num}`, { state: { fromList: true, search: searchParams.toString() } })}>详情</Button>
-          {r.isEnabled === false && (
-            <Popconfirm title="确定删除？" onConfirm={() => handleDelete(r)}>
-              <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+          <Button type="link" size="small" onClick={() => setCurrent(r)}>详情</Button>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => { setCurrent(r) }}>编辑</Button>
+          <Button
+            type="link"
+            size="small"
+            icon={<ThunderboltOutlined />}
+            loading={testingId === r.mcpId}
+            onClick={() => handleTest(r)}
+          >测试</Button>
+          {r.isEnabled ? (
+            <Popconfirm title="确定禁用？" onConfirm={() => handleDisable(r)}>
+              <Button type="link" size="small" danger>禁用</Button>
             </Popconfirm>
+          ) : (
+            <Button type="link" size="small" onClick={() => handleEnable(r)}>启用</Button>
           )}
+          <Popconfirm title="确定删除？" onConfirm={() => handleDelete(r)}>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+          </Popconfirm>
         </Space>
       ),
     },
   ]
 
+  const handleTest = async (record: MCPItem) => {
+    setTestingId(record.mcpId)
+    try {
+      const res = await testMCPConnection(record.num!)
+      message.success(res.data.data?.success ? '连通性测试通过' : `测试失败: ${res.data.data?.errorMessage}`)
+    } catch {
+      message.error('测试失败')
+    } finally {
+      setTestingId(null)
+    }
+  }
+
+  const handleEnable = async (record: MCPItem) => {
+    try {
+      await enableMCP(record.num!)
+      message.success('启用成功')
+    } catch {
+      message.error('启用失败')
+    }
+  }
+
+  const handleDisable = async (record: MCPItem) => {
+    try {
+      await disableMCP(record.num!)
+      message.success('禁用成功')
+    } catch {
+      message.error('禁用失败')
+    }
+  }
+
   const handleDelete = async (record: MCPItem) => {
     try {
       await deleteMCP(record.num!)
       message.success('删除成功')
-      reload()
     } catch {
       message.error('删除失败')
     }
   }
 
   return (
-    <ProTable<MCPItem>
-      actionRef={actionRef}
-      columns={columns}
-      rowKey="num"
-      scroll={{ x: 1400 }}
-      search={{
-        labelWidth: 'auto',
-      }}
-      request={async (params) => {
-        const { mcpName, status, current, pageSize } = params
-        const apiParams: Record<string, unknown> = {
-          pageNo: current ?? 1,
-          pageSize: pageSize ?? 10,
-        }
-        if (mcpName) apiParams.keyword = mcpName
-        if (status) {
-          const statusMapReverse: Record<string, string> = { '未连接': 'UNCONNECTED', '已连接': 'CONNECTED', '异常': 'ERROR' }
-          apiParams.status = statusMapReverse[String(status)] || status
-        }
-        setSearchParams(apiParams as Record<string, string>, { replace: true })
-        const res = await getMCPs(apiParams)
-        const records = (res.data.data?.records as unknown as Record<string, unknown>[]) || []
-        return {
-          data: records.map((r) => toMCPItem(r)),
-          success: true,
-          total: Number(res.data.data?.total || 0),
-        }
-      }}
-      headerTitle="MCP管理"
-      toolBarRender={() => [
-        <Button key="add" type="primary" icon={<PlusOutlined />} onClick={() => navigate('/mcps/new', { state: { fromList: true, search: searchParams.toString() } })}>
-          新增MCP
-        </Button>,
-      ]}
-      pagination={{
-        showSizeChanger: true,
-        showTotal: (t) => `共 ${t} 条`,
-      }}
-    />
+    <>
+      <ProTable<MCPItem>
+        columns={columns}
+        rowKey="mcpId"
+        scroll={{ x: 1400 }}
+        request={async (params) => {
+          const res = await getMCPs({
+            pageNo: params.current ?? 1,
+            pageSize: params.pageSize ?? 10,
+            ...params,
+          } as Record<string, unknown>)
+          const records = (res.data.data?.records as unknown as Record<string, unknown>[]) || []
+          return {
+            data: records.map(toMCPItem),
+            success: true,
+            total: Number(res.data.data?.total || 0),
+          }
+        }}
+        headerTitle="MCP管理"
+        toolBarRender={() => [
+          <Button key="add" type="primary" icon={<PlusOutlined />} onClick={() => { setCurrent(null) }}>
+            新增MCP
+          </Button>,
+        ]}
+        pagination={{
+          showSizeChanger: true,
+          showTotal: (t) => `共 ${t} 条`,
+        }}
+      />
+
+      <ModalForm<MCPFormValues>
+        title={current ? '编辑MCP' : '新增MCP'}
+        open={!!current}
+        onOpenChange={(open) => { if (!open) setCurrent(null) }}
+        onFinish={async (values) => {
+          try {
+            if (current) {
+              await updateMCP({ ...values, id: current.mcpId })
+              message.success('修改成功')
+            } else {
+              await createMCP(values)
+              message.success('创建成功')
+            }
+            setCurrent(null)
+            return true
+          } catch {
+            message.error('操作失败')
+            return false
+          }
+        }}
+        width={720}
+        initialValues={{ protocolVersion: 'v1.0', transportType: 'sse', authType: '无认证', timeoutSeconds: 30, maxRetries: 3, healthCheckInterval: 60 }}
+      >
+        <ProFormText name="mcpName" label="服务名称" rules={[{ required: true }]} placeholder="2-50字符" />
+        <ProFormText name="serverUrl" label="服务器地址" rules={[{ required: true }]} placeholder="http://localhost:8080" />
+        <ProFormTextArea name="description" label="描述" />
+        <ProFormSelect
+          name="protocolVersion"
+          label="协议版本"
+          options={[{ label: 'v1.0', value: 'v1.0' }, { label: 'v1.1', value: 'v1.1' }, { label: 'v2.0', value: 'v2.0' }]}
+        />
+        <ProFormSelect
+          name="transportType"
+          label="传输类型"
+          options={[{ label: 'stdio', value: 'stdio' }, { label: 'sse', value: 'sse' }, { label: 'http', value: 'http' }]}
+        />
+        <ProFormSelect
+          name="authType"
+          label="认证方式"
+          options={[
+            { label: '无认证', value: '无认证' },
+            { label: 'API Key', value: 'API Key' },
+            { label: 'Bearer Token', value: 'Bearer Token' },
+            { label: 'OAuth2.0', value: 'OAuth2.0' },
+            { label: 'Basic Auth', value: 'Basic Auth' },
+          ]}
+        />
+        <ProFormDigit name="timeoutSeconds" label="超时时间(秒)" min={5} max={300} />
+        <ProFormDigit name="maxRetries" label="最大重试次数" min={0} max={10} />
+        <ProFormDigit name="healthCheckInterval" label="健康检查间隔(秒)" min={10} max={300} />
+      </ModalForm>
+    </>
   )
 }
