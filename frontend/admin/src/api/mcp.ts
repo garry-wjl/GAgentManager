@@ -1,42 +1,43 @@
 import { get, post } from './request'
 import type { MCPItem, MCPFormValues, PageResult } from '../types'
 
-/** MCP 管理 API，对齐后端 /api/admin/mcps 接口 */
+/** MCP 管理 API，对齐后端接口：
+ * Query: /api/mcp/query/*
+ * Command: /api/mcp/command/*
+ */
 
 export function getMCPs(params?: Record<string, unknown>) {
-  return get<PageResult<MCPItem>>('/admin/mcps/list', { params })
+  return get<PageResult<MCPItem>>('/mcp/query/list', { params })
+}
+
+export function getMCPByNum(num: string) {
+  return get<MCPItem>('/mcp/query/detail', { params: { num } })
 }
 
 export function getMCP(id: string) {
-  return get<MCPItem>('/admin/mcps/get', { params: { id } })
+  return get<MCPItem>('/mcp/query/get', { params: { id } })
 }
 
 export function createMCP(data: MCPFormValues) {
-  return post<MCPItem>('/admin/mcps/create', data)
+  return post<MCPItem>('/mcp/command/create', data)
 }
 
 export function updateMCP(data: MCPFormValues & { id: string }) {
-  return post<MCPItem>('/admin/mcps/update', data)
+  return post<void>('/mcp/command/update', data)
 }
 
 export function deleteMCP(num: string) {
-  return post('/admin/mcps/delete', null, { params: { num } })
+  return post<void>('/mcp/command/delete', null, { params: { num } })
 }
 
 export function enableMCP(num: string) {
-  return post('/admin/mcps/enable', null, { params: { num } })
+  return post<void>('/mcp/command/enable', null, { params: { num } })
 }
 
 export function disableMCP(num: string) {
-  return post('/admin/mcps/disable', null, { params: { num } })
+  return post<void>('/mcp/command/disable', null, { params: { num } })
 }
 
-export function testMCPConnection(num: string) {
-  return post<MCPTestResult>('/admin/mcps/test', null, { params: { num } })
-}
-
-export interface MCPTestResult {
-  success: boolean
-  responseTime: number
-  errorMessage: string
+export function testMCP(num: string) {
+  return post<Record<string, unknown>>('/mcp/command/test', null, { params: { num } })
 }
