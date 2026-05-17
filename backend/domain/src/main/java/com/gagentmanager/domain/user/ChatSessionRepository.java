@@ -1,5 +1,7 @@
 package com.gagentmanager.domain.user;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+
 /** 对话会话仓储接口 */
 public interface ChatSessionRepository {
     ChatSession findById(Long id);
