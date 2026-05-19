@@ -27,4 +27,5 @@ public class SkillVO {
     private String minAgentVersion;
     private Date createTime;
     private Date updateTime;
+    private String packageUrl;
 }

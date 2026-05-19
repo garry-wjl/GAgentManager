@@ -2,10 +2,17 @@ package com.gagentmanager.application.skill;
 
 import com.gagentmanager.client.skill.*;
 import com.gagentmanager.domain.skill.*;
+import com.gagentmanager.domain.file.FileGateway;
 import com.gagentmanager.facade.common.BusinessException;
 import com.gagentmanager.facade.common.ErrorCode;
+import com.gagentmanager.infra.file.gateway.LocalFileGateway;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 
 /** Skill 写操作服务，负责 Skill 的创建/更新/删除/安装/卸载/评价 */
 @Service
@@ -15,13 +22,16 @@ public class SkillCommandService {
     private final SkillVersionRepository versionRepository;
     private final SkillReviewRepository reviewRepository;
     private final SkillInstallRecordRepository installRecordRepository;
+    private final FileGateway fileGateway;
 
     public SkillCommandService(SkillRepository skillRepository, SkillVersionRepository versionRepository,
-                               SkillReviewRepository reviewRepository, SkillInstallRecordRepository installRecordRepository) {
+                               SkillReviewRepository reviewRepository, SkillInstallRecordRepository installRecordRepository,
+                               FileGateway fileGateway) {
         this.skillRepository = skillRepository;
         this.versionRepository = versionRepository;
         this.reviewRepository = reviewRepository;
         this.installRecordRepository = installRecordRepository;
+        this.fileGateway = fileGateway;
     }
 
     public SkillVO createSkill(CreateSkillParam param, Long operatorId) {
@@ -97,5 +107,34 @@ public class SkillCommandService {
         SkillVO vo = new SkillVO();
         BeanUtils.copyProperties(s, vo);
         return vo;
+    }
+
+    private static final List<String> ALLOWED_PACKAGE_TYPES = List.of(
+            "application/zip",
+            "application/x-zip-compressed",
+            "application/octet-stream"
+    );
+
+    public SkillVO uploadPackage(String skillNum, MultipartFile file, Long operatorId) {
+        Skill skill = skillRepository.findByNum(skillNum);
+        if (skill == null) {
+            throw new BusinessException(ErrorCode.SKILL_NOT_FOUND);
+        }
+
+        String mimeType = file.getContentType();
+        if (mimeType == null || !ALLOWED_PACKAGE_TYPES.contains(mimeType)) {
+            throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED);
+        }
+
+        String fileKey = "skills/" + LocalFileGateway.generateFileKey(file.getOriginalFilename());
+        try (InputStream input = file.getInputStream()) {
+            String fileUrl = fileGateway.upload(input, fileKey, mimeType);
+            skill.setPackageUrl(fileUrl);
+            skill.save(operatorId);
+            skillRepository.save(skill, operatorId);
+            return toSkillVO(skill);
+        } catch (IOException e) {
+            throw new BusinessException(ErrorCode.UPLOAD_FAILED);
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.gagentmanager.infra.file.gateway;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
@@ -14,6 +15,7 @@ import java.util.UUID;
  * 生产环境替换为 MinIO/OSS 实现
  */
 @Component
+@ConditionalOnProperty(name = "file.storage.type", havingValue = "local", matchIfMissing = true)
 public class LocalFileGateway implements com.gagentmanager.domain.file.FileGateway {
 
     @Value("${file.storage.local.base-path:./gagent-files}")

@@ -7,6 +7,7 @@ import com.gagentmanager.facade.common.Result;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /** Skill 管理端 Command REST 接口，处理 Skill 的增删改/安装/卸载/评价等写操作请求 */
 @RestController
@@ -58,5 +59,13 @@ public class SkillCommandController extends BaseController {
         Long userId = (Long) request.getAttribute("userId");
         skillCommandService.reviewSkill(param, userId);
         return success();
+    }
+
+    @PostMapping("/upload-package")
+    public Result<SkillVO> uploadPackage(@RequestParam String num,
+                                         @RequestParam("file") MultipartFile file,
+                                         HttpServletRequest request) {
+        Long operatorId = (Long) request.getAttribute("userId");
+        return success(skillCommandService.uploadPackage(num, file, operatorId));
     }
 }

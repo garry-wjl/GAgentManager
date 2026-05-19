@@ -23,6 +23,7 @@ public class Skill extends DomainEntity {
     private Boolean isOfficial;
     private Boolean isFree;
     private String minAgentVersion;
+    private String packageUrl;
 
     public void save(Long operatorId) {
         if (this.installCount == null) {

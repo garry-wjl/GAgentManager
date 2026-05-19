@@ -20,6 +20,7 @@ export interface SkillItem {
   createTime: string
   updater: string
   updateTime: string
+  packageUrl?: string
 }
 
 export type SkillCategory = '数据处理' | '工具调用' | '内容生成' | '搜索查询' | '系统集成' | '自定义'

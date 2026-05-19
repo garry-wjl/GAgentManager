@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { Button, Space, Tag, message, Popconfirm, Form, Input, Select, Descriptions, Card, Checkbox } from 'antd'
-import type { DescriptionsProps } from 'antd'
-import { EditOutlined, SaveOutlined, DeleteOutlined, PlayCircleOutlined, StopOutlined } from '@ant-design/icons'
+import { Button, Space, Tag, message, Popconfirm, Form, Input, Select, Descriptions, Card, Checkbox, Upload } from 'antd'
+import type { DescriptionsProps, UploadFile } from 'antd'
+import { EditOutlined, SaveOutlined, DeleteOutlined, PlayCircleOutlined, StopOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons'
 import { PageContainer } from '@ant-design/pro-components'
-import { getSkill, createSkill, updateSkill, deleteSkill, installSkill, uninstallSkill } from '../../api/skill'
+import { getSkill, createSkill, updateSkill, deleteSkill, installSkill, uninstallSkill, uploadSkillPackage } from '../../api/skill'
 import type { SkillItem, SkillFormValues } from '../../types'
 
 const STATUS_MAP: Record<string, { text: string; color: string }> = {
@@ -63,6 +63,7 @@ function toSkillItem(vo: Record<string, unknown>): SkillItem {
     createTime: vo.createTime ? new Date(vo.createTime as number).toLocaleString('zh-CN') : '',
     updater: String(vo.updateNo || ''),
     updateTime: vo.updateTime ? new Date(vo.updateTime as number).toLocaleString('zh-CN') : '',
+    packageUrl: String(vo.packageUrl || ''),
   }
 }
 
@@ -74,9 +75,11 @@ export default function SkillDetail() {
 
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [skill, setSkill] = useState<SkillItem | null>(null)
   const [editing, setEditing] = useState(false)
   const [form] = Form.useForm()
+  const [fileList, setFileList] = useState<UploadFile[]>([])
 
   const listState = (location.state as { fromList?: boolean; search?: string } | null)
   const listBackUrl = listState?.fromList ? `/skills?${listState.search || ''}` : '/skills'
@@ -181,6 +184,29 @@ export default function SkillDetail() {
     }
   }
 
+  const handleUploadPackage = async (file: File) => {
+    if (!skill?.num && !isNew) return
+    setUploading(true)
+    try {
+      const targetNum = isNew ? undefined : skill.num
+      if (!targetNum) {
+        message.error('请先创建Skill后再上传包文件')
+        return
+      }
+      const res = await uploadSkillPackage(targetNum, file)
+      const vo = res.data.data as unknown as Record<string, unknown>
+      if (vo) {
+        setSkill(toSkillItem(vo))
+        message.success('Skill包上传成功')
+      }
+    } catch {
+      message.error('Skill包上传失败')
+    } finally {
+      setUploading(false)
+    }
+    return false // Prevent default upload behavior
+  }
+
   const statusInfo = skill ? STATUS_MAP[skill._rawStatus || ''] || STATUS_MAP.NOT_INSTALLED : null
   const pageTitle = isNew ? '新增Skill' : (editing ? '编辑Skill' : 'Skill详情')
 
@@ -228,6 +254,9 @@ export default function SkillDetail() {
       { key: 'isFree', label: '免费', children: skill.isFree ? '是' : '否' },
       { key: 'tags', label: '标签', children: skill.tags && skill.tags.length > 0 ? skill.tags.map((t) => <Tag key={t} style={{ marginInlineEnd: 4 }}>{t}</Tag>) : '-' },
       { key: 'description', label: '描述', children: skill.description || '-', span: 2 },
+      { key: 'packageUrl', label: 'Skill包', children: skill.packageUrl ? (
+        <a href={skill.packageUrl} target="_blank" rel="noopener noreferrer"><DownloadOutlined /> 下载Skill包</a>
+      ) : '-' },
       { key: 'createTime', label: '创建时间', children: skill.createTime },
       { key: 'updater', label: '更新人', children: skill.updater },
     ]
@@ -267,6 +296,30 @@ export default function SkillDetail() {
           <Input.TextArea placeholder="可选" rows={3} maxLength={500} showCount />
         </Form.Item>
       </Form>
+      {!isNew && skill && (
+        <div style={{ marginTop: 24 }}>
+          <h4>Skill包上传</h4>
+          <Upload.Dragger
+            accept=".zip"
+            maxCount={1}
+            fileList={fileList}
+            beforeUpload={handleUploadPackage}
+            onRemove={() => setFileList([])}
+            disabled={uploading}
+          >
+            <p className="ant-upload-drag-icon">
+              <UploadOutlined />
+            </p>
+            <p className="ant-upload-text">点击或拖拽 .zip 文件到此区域上传</p>
+            <p className="ant-upload-hint">仅支持 .zip 格式的 Skill 包文件</p>
+          </Upload.Dragger>
+          {skill.packageUrl && (
+            <div style={{ marginTop: 12 }}>
+              当前包文件：<a href={skill.packageUrl} target="_blank" rel="noopener noreferrer"><DownloadOutlined /> 下载</a>
+            </div>
+          )}
+        </div>
+      )}
     </Card>
   )
 

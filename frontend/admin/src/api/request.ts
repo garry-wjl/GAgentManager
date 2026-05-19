@@ -157,4 +157,13 @@ export function del<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosR
   return request.delete<ApiResponse<T>>(url, config)
 }
 
+export function upload<T>(url: string, formData: FormData, config?: AxiosRequestConfig): Promise<AxiosResponse<ApiResponse<T>>> {
+  return request.post<ApiResponse<T>>(url, formData, {
+    ...config,
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+}
+
 export default request

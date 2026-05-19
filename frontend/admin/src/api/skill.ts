@@ -1,4 +1,4 @@
-import { get, post } from './request'
+import { get, post, upload } from './request'
 import type { SkillItem, SkillVersionItem, SkillReviewItem, InstallRecordItem, PageResult } from '../types'
 
 /** Skill 管理 API，对齐后端接口：
@@ -48,6 +48,12 @@ export function getSkillReviews(params?: Record<string, unknown>) {
 
 export function getSkillInstallRecords(skillId: string) {
   return get<InstallRecordItem[]>('/skill/query/install-records', { params: { skillId } })
+}
+
+export function uploadSkillPackage(num: string, file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return upload<SkillItem>('/skill/command/upload-package', formData, { params: { num } })
 }
 
 export interface SkillFormValues {

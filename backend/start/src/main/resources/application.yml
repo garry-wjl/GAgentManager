@@ -38,9 +38,16 @@ logging:
 
 file:
   storage:
+    type: ${FILE_STORAGE_TYPE:local}  # local 或 aliyun-oss
     local:
       base-path: ./gagent-files
       url-prefix: http://localhost:8080/api/file/download?key=
+    aliyun-oss:
+      endpoint: ${OSS_ENDPOINT:}
+      bucket: ${OSS_BUCKET:}
+      access-key-id: ${OSS_ACCESS_KEY_ID:}
+      access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
+      url-prefix: ${OSS_URL_PREFIX:}
     max-file-size: 20971520
     allowed-types:
       - image/png

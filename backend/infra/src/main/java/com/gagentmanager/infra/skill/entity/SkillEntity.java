@@ -26,4 +26,5 @@ public class SkillEntity extends DomainEntity {
     private Boolean isOfficial;
     private Boolean isFree;
     private String minAgentVersion;
+    private String packageUrl;
 }
