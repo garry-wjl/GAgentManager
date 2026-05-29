@@ -42,6 +42,13 @@ logs/
 .jest/
 coverage/
 
+# Java 构建输出
+**/target/
+
+# Claude 本地配置
+.claude/settings.local.json
+.claude/worktrees/
+
 # IDE特定文件
 .vs/
 *.sublime-project
