@@ -55,3 +55,4 @@ coverage/
 # Windows
 ehthumbs.db
 Thumbs.dbtarget/
+.claude/worktrees/
